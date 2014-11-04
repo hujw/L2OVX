@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: net.onrc.openvirtex.api.service.handlers.tenant.PassingAPITest
+-------------------------------------------------------------------------------
+Tests run: 15, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.901 sec
