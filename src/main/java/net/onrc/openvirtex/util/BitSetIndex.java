@@ -50,17 +50,19 @@ public class BitSetIndex {
         protected Integer value;
 
         private static Integer getLinkMaxValue() {
-            if (OpenVirteXController.getInstance().getOvxLinkField().getValue() == OVXLinkField.MAC_ADDRESS
-                    .getValue()) {
+        	// hujw
+        	// must be checked again
+//            if (OpenVirteXController.getInstance().getOvxLinkField().getValue() == OVXLinkField.MAC_ADDRESS
+//                    .getValue()) {
                 return (int) Math.pow(2, ((48 - OpenVirteXController
                         .getInstance().getNumberVirtualNets()) / 2));
-            } else if (OpenVirteXController.getInstance().getOvxLinkField()
-                    .getValue() == OVXLinkField.VLAN.getValue()) {
-                return (int) Math.pow(2, ((12 - OpenVirteXController
-                        .getInstance().getNumberVirtualNets()) / 2));
-            } else {
-                return 1000;
-            }
+//            } else if (OpenVirteXController.getInstance().getOvxLinkField()
+//                    .getValue() == OVXLinkField.VLAN.getValue()) {
+//                return (int) Math.pow(2, ((12 - OpenVirteXController
+//                        .getInstance().getNumberVirtualNets()) / 2));
+//            } else {
+//                return 1000;
+//            }
         }
 
         private IndexType(final Integer value) {
