@@ -24,8 +24,10 @@ import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
 
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.Mappable;
 import net.onrc.openvirtex.elements.OVXMap;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
@@ -40,6 +42,9 @@ import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
  */
 public final class IPMapper {
     private static Logger log = LogManager.getLogger(IPMapper.class.getName());
+    //hujw
+    private static final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     /**
      * Overrides default constructor to no-op private constructor.
@@ -76,11 +81,16 @@ public final class IPMapper {
     }
 
     public static void rewriteMatch(final Integer tenantId, final OFMatch match) {
-        match.setNetworkSource(getPhysicalIp(tenantId, match.getNetworkSource()));
-        match.setNetworkDestination(getPhysicalIp(tenantId,
-                match.getNetworkDestination()));
-        // modify by hujw
-        match.setDataLayerVirtualLan(Short.parseShort(tenantId.toString()));
+    	// modify by hujw
+    	if (linkField == OVXLinkField.VLAN) {
+            match.setDataLayerVirtualLan(tenantId.shortValue());
+            log.info("rewriteMatch: {}", match);    		
+    	} else if (linkField == OVXLinkField.MAC_ADDRESS) {
+        	match.setNetworkSource(getPhysicalIp(tenantId, match.getNetworkSource()));
+        	match.setNetworkDestination(getPhysicalIp(tenantId,
+                  match.getNetworkDestination()));   		
+    	}
+        // end
     }
 
 	public static List<OFAction> prependRewriteActions(final Integer tenantId,
@@ -88,44 +98,49 @@ public final class IPMapper {
         final List<OFAction> actions = new LinkedList<OFAction>();
         
         // modify by hujw (Tag VLAN)
-        final OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
-        vlanAct.setVirtualLanIdentifier(Short.parseShort(tenantId.toString()));
-        actions.add(vlanAct);
-        
-        if (!match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
-            final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
-            srcAct.setNetworkAddress(getPhysicalIp(tenantId,
-                    match.getNetworkSource()));
-            actions.add(srcAct);
-        }
-        if (!match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
-            final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
-            dstAct.setNetworkAddress(getPhysicalIp(tenantId,
-                    match.getNetworkDestination()));
-            actions.add(dstAct);
-        }
+    	if (linkField == OVXLinkField.VLAN) {
+    		final OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
+            vlanAct.setVirtualLanIdentifier(tenantId.shortValue());
+            actions.add(vlanAct);	
+    	} else if (linkField == OVXLinkField.MAC_ADDRESS) {
+			if (!match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
+				final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
+				srcAct.setNetworkAddress(getPhysicalIp(tenantId,
+						match.getNetworkSource()));
+				actions.add(srcAct);
+			}
+			if (!match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
+				final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
+				dstAct.setNetworkAddress(getPhysicalIp(tenantId,
+						match.getNetworkDestination()));
+				actions.add(dstAct);
+			} 		
+    	}
+        // end
         
         return actions;
     }
 
-    // modify by hujw
     public static List<OFAction> prependUnRewriteActions(final Integer tenantId, final OFMatch match) {
         final List<OFAction> actions = new LinkedList<OFAction>();
         
-        // modify by hujw (Strip VLAN)
-        final OVXActionStripVirtualLan stripVlanAct = new OVXActionStripVirtualLan();
-        actions.add(stripVlanAct);
-        
-//        if (!match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
-//            final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
-//            srcAct.setNetworkAddress(match.getNetworkSource());
-//            actions.add(srcAct);
-//        }
-//        if (!match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
-//            final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
-//            dstAct.setNetworkAddress(match.getNetworkDestination());
-//            actions.add(dstAct);
-//        }
+        // modify by hujw
+        if (linkField == OVXLinkField.VLAN) {
+        	final OVXActionStripVirtualLan vlanAct = new OVXActionStripVirtualLan();
+            actions.add(vlanAct);
+        } else if (linkField == OVXLinkField.MAC_ADDRESS) {
+            if (!match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
+                final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
+                srcAct.setNetworkAddress(match.getNetworkSource());
+                actions.add(srcAct);
+            }
+            if (!match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
+                final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
+                dstAct.setNetworkAddress(match.getNetworkDestination());
+                actions.add(dstAct);
+            }
+        }
+        // end
         
         return actions;
     }
