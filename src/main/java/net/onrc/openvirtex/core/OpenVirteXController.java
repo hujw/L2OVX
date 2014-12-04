@@ -100,9 +100,9 @@ public class OpenVirteXController implements Runnable {
         this.nServerThreads = settings.getServerThreads();
         this.useBDDP = settings.getUseBDDP();
         // by default, use Mac addresses to store vLinks informations
-        this.ovxLinkField = OVXLinkField.MAC_ADDRESS;
         //modify hujw
-        //this.ovxLinkField = settings.getLinkField();
+        //this.ovxLinkField = OVXLinkField.MAC_ADDRESS;
+        this.ovxLinkField = settings.getLinkField();
         
         this.clientThreads = new OrderedMemoryAwareThreadPoolExecutor(
                 nClientThreads, 1048576, 1048576, 5, TimeUnit.SECONDS);
