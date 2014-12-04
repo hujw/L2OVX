@@ -19,13 +19,16 @@ import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPMapper;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.exceptions.ActionVirtualizationDenied;
 import net.onrc.openvirtex.exceptions.DroppedMessageException;
 import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerDestination;
 import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerSource;
+import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
 import net.onrc.openvirtex.messages.actions.VirtualizableAction;
 import net.onrc.openvirtex.protocol.OVXMatch;
 
@@ -47,6 +50,9 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
             .getName());
     private OFMatch match = null;
     private final List<OFAction> approvedActions = new LinkedList<OFAction>();
+    // hujw
+    private final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     @Override
     public void devirtualize(final OVXSwitch sw) {
@@ -86,6 +92,12 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
             }
         }
 
+        // modified by hujw
+        // attach tenantId as the vlan field of ovxMatch
+        if (linkField == OVXLinkField.VLAN) {
+        	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
+        }
+        // end
         for (final OFAction act : this.getActions()) {
             try {
                 ((VirtualizableAction) act).virtualize(sw,
@@ -125,19 +137,27 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
     }
 
     private void prependRewriteActions(final OVXSwitch sw) {
-        if (!this.match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
-            final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
-            srcAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
-                    this.match.getNetworkSource()));
-            this.approvedActions.add(0, srcAct);
-        }
+    	// modify by hujw
+    	if (linkField == OVXLinkField.VLAN) {
+    		final OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
+        	vlanAct.setVirtualLanIdentifier(sw.getTenantId().shortValue());
+        	this.approvedActions.add(0, vlanAct);	
+    	} else if (linkField == OVXLinkField.MAC_ADDRESS) {
+        	if (!this.match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
+                final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
+                srcAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
+                        this.match.getNetworkSource()));
+                this.approvedActions.add(0, srcAct);
+            }
 
-        if (!this.match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
-            final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
-            dstAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
-                    this.match.getNetworkDestination()));
-            this.approvedActions.add(0, dstAct);
-        }
+            if (!this.match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
+                final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
+                dstAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
+                        this.match.getNetworkDestination()));
+                this.approvedActions.add(0, dstAct);
+            }	
+    	}
+        // end
     }
 
     public OVXPacketOut(final OVXPacketOut pktOut) {

@@ -20,11 +20,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPMapper;
 import net.onrc.openvirtex.elements.datapath.FlowTable;
 import net.onrc.openvirtex.elements.datapath.OVXFlowTable;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.OVXLinkUtils;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.exceptions.ActionVirtualizationDenied;
@@ -55,7 +57,10 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
     private OVXSwitch sw = null;
     private final List<OFAction> approvedActions = new LinkedList<OFAction>();
 
-    private long ovxCookie = -1;
+    private long ovxCookie = -1; 
+    // hujw
+    private final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     @Override
     public void devirtualize(final OVXSwitch sw) {
@@ -82,10 +87,17 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         ovxMatch.setCookie(ovxCookie);
         this.setCookie(ovxMatch.getCookie());
 
+        log.info("####");
+        // modified by hujw
+        // attach tenantId as the vlan field of ovxMatch
+        ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
+     	// end
+        
         for (final OFAction act : this.getActions()) {
             try {
                 ((VirtualizableAction) act).virtualize(sw,
                         this.approvedActions, ovxMatch);
+                log.info("{}, {}", this.approvedActions, ovxMatch);
             } catch (final ActionVirtualizationDenied e) {
                 this.log.warn("Action {} could not be virtualized; error: {}",
                         act, e.getMessage());
@@ -137,8 +149,10 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         try {
             if (inPort.isEdge()) {
                 this.prependRewriteActions();
+                log.info("{}", this.approvedActions);
             } else {
                 IPMapper.rewriteMatch(sw.getTenantId(), this.match);
+                log.info("rewriteMatch {}", this.match);
                 // TODO: Verify why we have two send points... and if this is
                 // the right place for the match rewriting
                 if (inPort != null
@@ -191,23 +205,27 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
     }
 
     private void prependRewriteActions() {
-//    	if (!this.match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
-//            final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
-//            srcAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
-//                    this.match.getNetworkSource()));
-//            this.approvedActions.add(0, srcAct);
-//        }
-//
-//        if (!this.match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
-//            final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
-//            dstAct.setNetworkAddress(IPMapper.getPhysicalIp(sw.getTenantId(),
-//                    this.match.getNetworkDestination()));
-//            this.approvedActions.add(0, dstAct);
-//        }
-        // modify by hujw
-        final OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
-        vlanAct.setVirtualLanIdentifier(Short.parseShort(sw.getTenantId().toString()));
-        this.approvedActions.add(0, vlanAct);
+    	// modify by hujw
+    	if (linkField == OVXLinkField.VLAN) {
+    		final OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
+        	vlanAct.setVirtualLanIdentifier(sw.getTenantId().shortValue());
+        	this.approvedActions.add(0, vlanAct);	
+    	} else if (linkField == OVXLinkField.MAC_ADDRESS) {
+			if (!this.match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
+				final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();
+				srcAct.setNetworkAddress(IPMapper.getPhysicalIp(
+						sw.getTenantId(), this.match.getNetworkSource()));
+				this.approvedActions.add(0, srcAct);
+			}
+
+			if (!this.match.getWildcardObj().isWildcarded(Flag.NW_DST)) {
+				final OVXActionNetworkLayerDestination dstAct = new OVXActionNetworkLayerDestination();
+				dstAct.setNetworkAddress(IPMapper.getPhysicalIp(
+						sw.getTenantId(), this.match.getNetworkDestination()));
+				this.approvedActions.add(0, dstAct);
+			}  		
+    	}
+    	// end
     }
 
     /**
