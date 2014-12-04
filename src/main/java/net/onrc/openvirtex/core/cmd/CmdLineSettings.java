@@ -15,6 +15,7 @@
  ******************************************************************************/
 package net.onrc.openvirtex.core.cmd;
 
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.util.OVXUtil;
 
 import org.kohsuke.args4j.Option;
@@ -66,6 +67,10 @@ public class CmdLineSettings {
      * Default value if BDDP is used for discovery.
      */
     public static final Boolean DEFAULT_USE_BDDP = false;
+    /**
+     * Default value of link field (MAC_ADDRESS  or VLAN).
+     */
+    public static final String DEFAULT_LINKFIELD = "MAC_ADDRESS";
 
     @Option(name = "-p", aliases = "--of-port", metaVar = "INT", usage = "OpenVirteX OpenFlow listen port")
     private Integer ofPort = CmdLineSettings.DEFAULT_OF_PORT;
@@ -96,6 +101,9 @@ public class CmdLineSettings {
 
     @Option(name = "--ub", aliases = "--use-bddp", usage = "Use BDDP for network discovery; only use if you know what you are doing.")
     private Boolean useBDDP = CmdLineSettings.DEFAULT_USE_BDDP;
+    
+    @Option(name = "-lf", aliases = "--link-field", metaVar = "String", usage = "Link field (currently support 'MAC_ADDRESS' or 'VLAN'")
+    private String linkField = CmdLineSettings.DEFAULT_LINKFIELD;
 
     /**
      * Gets the host OVX is running on.
@@ -187,6 +195,18 @@ public class CmdLineSettings {
      */
     public Boolean getUseBDDP() {
         return this.useBDDP;
+    }
+    
+    /**
+     * Gets the value of link field.
+     *
+     * @return true if BDDP is enabled, false otherwise
+     */
+    public OVXLinkField getLinkField() {
+    	if (this.linkField.toLowerCase().equals("vlan"))
+    		return OVXLinkField.VLAN;
+    	
+    	return OVXLinkField.MAC_ADDRESS; 
     }
 
 }
