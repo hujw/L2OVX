@@ -29,6 +29,7 @@ import java.util.TreeMap;
 import java.util.Map;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.db.DBManager;
 import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.Persistable;
@@ -39,6 +40,7 @@ import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.Link;
 import net.onrc.openvirtex.elements.link.OVXLink;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.OVXLinkUtils;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.port.OVXPort;
@@ -48,6 +50,8 @@ import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.messages.OVXFlowMod;
+import net.onrc.openvirtex.messages.actions.OVXActionStripVirtualLan;
+import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
 import net.onrc.openvirtex.packet.Ethernet;
 
 import org.apache.logging.log4j.LogManager;
@@ -58,6 +62,7 @@ import org.openflow.protocol.OFPort;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.action.OFActionType;
+import org.openflow.protocol.action.OFActionVirtualLanIdentifier;
 import org.openflow.util.U8;
 
 /**
@@ -88,6 +93,9 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
     private PhysicalPort inPort;
     // A reference to the PhysicalPort at the start of the path
     private PhysicalPort outPort;
+    //hujw
+    final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     /**
      * Instantiates a new switch route for the given switch between
@@ -267,7 +275,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         this.setPriority(priority);
 
         int counter = 0;
-        SwitchRoute.log.info(
+        SwitchRoute.log.debug(
                 "Virtual network {}: switching all existing flow-mods crossing"
                 + "the big-switch {} route {} between ports ({},{}) to the new path: {}",
                 this.getTenantId(), this.getSrcPort().getParentSwitch()
@@ -283,7 +291,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                                 .getPortNumber()
                         && ((OFActionOutput) act).getPort() == this
                                 .getDstPort().getPortNumber()) {
-                    SwitchRoute.log.info(
+                    SwitchRoute.log.debug(
                             "Virtual network {}, switch {}, route {} between ports {}-{}: switch fm {}",
                             this.getTenantId(), this.getSrcPort()
                                     .getParentSwitch().getSwitchName(), this
@@ -326,6 +334,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
          * last FM to rewrite the MACs - generate the route FMs
          */
         if (this.getDstPort().isEdge()) {
+        	log.info("this.getDstPort().isEdge(), match {}", fm.getMatch());
             outActions.addAll(IPMapper.prependUnRewriteActions(sw.getTenantId(), fm.getMatch()));
         } else {
             final OVXLink link = this.getDstPort().getLink().getOutLink();
@@ -341,6 +350,11 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 link.generateLinkFMs(fm.clone(), flowId);
                 outActions.addAll(new OVXLinkUtils(this.getTenantId(), linkId,
                         flowId).setLinkFields());
+//                // modified by hujw (next, we can try to use this.getVlan(). But must confirm 
+//                // this vlan come from "tenantId")
+//                outActions.add(new OFActionVirtualLanIdentifier(sw.getTenantId().shortValue()));
+//                SwitchRoute.log.info("==Insert VLAN {}==", sw.getTenantId().shortValue());
+//                // end
             } catch (IndexOutOfBoundException e) {
                 SwitchRoute.log.error(
                         "Too many host to generate the flow pairs in this virtual network {}. "
@@ -360,6 +374,13 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
             IPMapper.rewriteMatch(this.getSrcPort().getTenantId(),
                     fm.getMatch());
         }
+        // modified by hujw
+        // We need to rewrite the vlan field in match by tenantId.
+        if (linkField == OVXLinkField.VLAN) {
+        	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
+            log.info("rewriteMatch: {}", fm.getMatch());	
+        }
+        // end
 
         /*
          * Get the list of physical links mapped to this virtual link, in
