@@ -22,10 +22,14 @@ import java.util.List;
 import java.util.Map;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.db.DBManager;
+import net.onrc.openvirtex.elements.Mappable;
 import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.messages.OVXPortStatus;
+
 import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFPortStatus.OFPortReason;
 
@@ -34,10 +38,9 @@ import org.openflow.protocol.OFPortStatus.OFPortReason;
  * it.
  */
 public class PhysicalPort extends Port<PhysicalSwitch, PhysicalLink> {
-
-
     private final Map<Integer, HashMap<Integer, OVXPort>> ovxPortMap;
-
+    private boolean isUsed = false;
+    
     /**
      * Instantiates a physical port based on an OpenFlow physical port.
      *
@@ -98,22 +101,27 @@ public class PhysicalPort extends Port<PhysicalSwitch, PhysicalLink> {
      *            the virtual port
      */
     public void setOVXPort(final OVXPort ovxPort) {
-        if (this.ovxPortMap.get(ovxPort.getTenantId()) != null) {
-            if (ovxPort.getLink() != null) {
-                this.ovxPortMap.get(ovxPort.getTenantId()).put(
-                        ovxPort.getLink().getInLink().getLinkId(), ovxPort);
-            } else {
-                this.ovxPortMap.get(ovxPort.getTenantId()).put(0, ovxPort);
-            }
-        } else {
-            final HashMap<Integer, OVXPort> portMap = new HashMap<Integer, OVXPort>();
-            if (ovxPort.getLink() != null) {
-                portMap.put(ovxPort.getLink().getOutLink().getLinkId(), ovxPort);
-            } else {
-                portMap.put(0, ovxPort);
-            }
-            this.ovxPortMap.put(ovxPort.getTenantId(), portMap);
-        }
+		if (this.ovxPortMap.get(ovxPort.getTenantId()) != null) {
+			if (ovxPort.getLink() != null) {
+				this.ovxPortMap.get(ovxPort.getTenantId()).put(
+						ovxPort.getLink().getInLink().getLinkId(), ovxPort);
+			} else {
+				this.ovxPortMap.get(ovxPort.getTenantId()).put(0, ovxPort);
+			}
+		} else {
+			final HashMap<Integer, OVXPort> portMap = new HashMap<Integer, OVXPort>();
+			if (ovxPort.getLink() != null) {
+				portMap.put(ovxPort.getLink().getOutLink().getLinkId(), ovxPort);
+			} else {
+				portMap.put(0, ovxPort);
+			}
+			this.ovxPortMap.put(ovxPort.getTenantId(), portMap);
+		}
+		this.isUsed = true;
+    }
+    
+    public boolean isUsed() {
+    	return this.isUsed;
     }
 
     @Override
@@ -148,6 +156,11 @@ public class PhysicalPort extends Port<PhysicalSwitch, PhysicalLink> {
     public void removeOVXPort(OVXPort ovxPort) {
         if (this.ovxPortMap.containsKey(ovxPort.getTenantId())) {
             this.ovxPortMap.remove(ovxPort.getTenantId());
+            
+            Mappable map = this.getParentSwitch().getMap();	
+            map.releasePhysicalPort(this.getParentSwitch().getSwitchId(), 
+            		this.portNumber, ovxPort.getTenantId());
+            this.isUsed = false;
         }
     }
 

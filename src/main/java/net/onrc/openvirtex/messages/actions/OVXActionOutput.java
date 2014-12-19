@@ -68,7 +68,12 @@ public class OVXActionOutput extends OFActionOutput implements
             log.warn("{}: skipping processing of OFAction", e);
             return;
         }
-
+        
+        // modify by hujw
+        // If we know the tenantId, attaching the match with it as vlan field.
+        log.info("before match {}", match);
+        // end
+        
         if (match.isFlowMod()) {
             /*
              * FlowMod management Iterate through the output port list. Two main
@@ -80,6 +85,7 @@ public class OVXActionOutput extends OFActionOutput implements
             // Retrieve the flowMod from the virtual flow map
             final OVXFlowMod fm;
             try {
+            	log.info("after match {}", match);
                 fm = sw.getFlowMod(match.getCookie());
             } catch (MappingException e) {
                 log.warn("FlowMod not found in our FlowTable");
@@ -88,6 +94,7 @@ public class OVXActionOutput extends OFActionOutput implements
             fm.setCookie(match.getCookie());
             // TODO: Check if the FM has been retrieved
 
+            log.info("++++");
             for (final OVXPort outPort : outPortList) {
                 Integer linkId = 0;
                 Integer flowId = 0;
@@ -115,6 +122,7 @@ public class OVXActionOutput extends OFActionOutput implements
                     // If the inPort belongs to an OVXLink, add rewrite actions
                     // to unset the packet link fields
                     if (inPort.isLink()) {
+                    	log.info("inPort.isLink()");
                         final OVXPort dstPort = vnet.getNeighborPort(inPort);
                         final OVXLink link = inPort.getLink().getOutLink();
                         if (link != null
@@ -135,9 +143,7 @@ public class OVXActionOutput extends OFActionOutput implements
                         }
                     }
 
-
                     route.generateRouteFMs(fm.clone());
-
 
                     // add the output action with the physical outPort (srcPort
                     // of the route)
@@ -269,12 +275,13 @@ public class OVXActionOutput extends OFActionOutput implements
                  * coming from the end point of the link to the controller.
                  */
                 if (outPort.isLink()) {
+                	log.info("outPort.isLink() - match {}", match);
                     final OVXPort dstPort = outPort.getLink().getOutLink()
                             .getDstPort();
                     dstPort.getParentSwitch().sendMsg(
                             new OVXPacketIn(match.getPktData(),
                                     dstPort.getPortNumber()), sw);
-                    this.log.debug(
+                    this.log.info(
                             "Generate a packetIn from OVX Port {}/{}, physicalPort {}/{}",
                             dstPort.getParentSwitch().getSwitchName(),
                             dstPort.getPortNumber(), dstPort.getPhysicalPort()
@@ -289,12 +296,13 @@ public class OVXActionOutput extends OFActionOutput implements
                     // and output port
                     if ((inPort == null)
                             || (((OVXBigSwitch) sw).getRoute(inPort, outPort) != null)) {
+                    	log.info("sw instanceof OVXBigSwitch - match {}", match);
                         final PhysicalPort dstPort = outPort.getPhysicalPort();
                         dstPort.getParentSwitch().sendMsg(
                                 new OVXPacketOut(match.getPktData(),
                                         OFPort.OFPP_NONE.getValue(),
                                         dstPort.getPortNumber()), sw);
-                        this.log.debug("PacketOut for a bigSwitch port, "
+                        this.log.info("PacketOut for a bigSwitch port, "
                                 + "generate a packet from Physical Port {}/{}",
                                 dstPort.getParentSwitch().getSwitchName(),
                                 dstPort.getPortNumber());
@@ -305,12 +313,14 @@ public class OVXActionOutput extends OFActionOutput implements
                      * modify the packet and send to the physical switch.
                      *
                      */
+                	log.info("single switch - match {}", match);
                     throwException = false;
                     approvedActions.addAll(IPMapper
                             .prependUnRewriteActions(sw.getTenantId(), match));
                     approvedActions.add(new OFActionOutput(outPort
                             .getPhysicalPortNumber()));
-                    this.log.debug(
+                    
+                    this.log.info(
                             "Physical ports are on the same physical switch, rewrite only outPort to {}",
                             outPort.getPhysicalPortNumber());
                 }

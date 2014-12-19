@@ -34,6 +34,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
@@ -69,6 +70,7 @@ public final class OVXMap implements Mappable {
     private RadixTree<OVXIPAddress> physicalIPMap;
     private RadixTree<ConcurrentHashMap<Integer, PhysicalIPAddress>> virtualIPMap;
     private RadixTree<Integer> macMap;
+    private RadixTree<Integer> physicalPortMap;
 
     /**
      * Creates a new map instance, by initializing all mapping data structures.
@@ -87,7 +89,9 @@ public final class OVXMap implements Mappable {
                 new DefaultCharArrayNodeFactory());
         this.macMap = new ConcurrentRadixTree<Integer>(
                 new DefaultCharArrayNodeFactory());
-    }
+        this.physicalPortMap = new ConcurrentRadixTree<Integer>(
+                new DefaultCharArrayNodeFactory());
+    } 
 
     /**
      * Gets the instance of the class and if this already exists
@@ -830,5 +834,22 @@ public final class OVXMap implements Mappable {
             }
         }
     }
+
+	@Override
+	public void bindPhysicalPort(long physicalDpid, short portNumber,
+			Integer tenantId) {
+		this.physicalPortMap.put(physicalDpid+"-"+portNumber, tenantId);
+	}
+
+	@Override
+	public Integer getTenantId(long physicalDpid, short portNumber) {
+		return this.physicalPortMap.getValueForExactKey(physicalDpid+"-"+portNumber);
+	}
+
+	@Override
+	public void releasePhysicalPort(long physicalDpid, short portNumber,
+			Integer tenantId) {
+		this.physicalPortMap.remove(physicalDpid+"-"+portNumber);
+	}
 
 }

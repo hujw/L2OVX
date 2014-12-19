@@ -21,6 +21,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.db.DBManager;
 
 import org.apache.logging.log4j.LogManager;
@@ -35,6 +36,7 @@ import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.link.OVXLink;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
@@ -123,13 +125,19 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
      * Registers a port in the virtual parent switch and in the physical port.
      */
     public void register() {
-        this.parentSwitch.addPort(this);
-        this.physicalPort.setOVXPort(this);
-        if (this.parentSwitch.isActive()) {
-            sendStatusMsg(OFPortReason.OFPPR_ADD);
-            this.parentSwitch.generateFeaturesReply();
+		this.parentSwitch.addPort(this);
+		this.physicalPort.setOVXPort(this);
+		if (this.parentSwitch.isActive()) {
+			sendStatusMsg(OFPortReason.OFPPR_ADD);
+			this.parentSwitch.generateFeaturesReply();
+		}
+		// bind the edge PhysicalPort and tenantId
+		if (this.physicalPort.isUsed()) {
+        	OVXMap.getInstance().bindPhysicalPort(
+        			this.physicalPort.getParentSwitch().getSwitchId(), 
+        			physicalPort.getPortNumber(), this.tenantId);
         }
-        DBManager.getInstance().save(this);
+		DBManager.getInstance().save(this);
     }
 
     /**
@@ -268,6 +276,12 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     public void unMap() {
         this.parentSwitch.removePort(this.portNumber);
         this.physicalPort.removeOVXPort(this);
+        // remove successfully
+        if (!this.physicalPort.isUsed()) {
+        	OVXMap.getInstance().releasePhysicalPort(
+        			this.physicalPort.getParentSwitch().getSwitchId(), 
+        			physicalPort.getPortNumber(), this.tenantId);
+        }
     }
 
     /**

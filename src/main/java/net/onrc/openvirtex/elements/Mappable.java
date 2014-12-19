@@ -26,6 +26,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
@@ -347,5 +348,33 @@ public interface Mappable {
      * @return a linkId if this link was known, otherwise null
      */
     public void knownLink(PhysicalLink link);
+    
+    /**
+     * Creates the mapping of the port in PhysicalSwitch and tenant ID.
+     *
+     * @param physicalDpid the physical DPID
+     * @param portNumber the physical port number
+     * @param tenantId the tenant ID.
+     */
+    public void bindPhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+    
+    /**
+     * Gets the tenant ID associated with the given PhysicalSwitch and PhysicalPort.
+     *
+     * @param physicalDpid the physical DPID
+     * @param portNumber the physical port number
+     * @return tenant ID associated with the given physical DPID and physical port number
+     */
+    public Integer getTenantId(long physicalDpid, short portNumber);
+    
+    /**
+     * Removes the MAC address from the map.
+    *
+    * @param physicalDpid the physical DPID
+    * @param portNumber the physical port number
+    * @param tenantId the tenant ID
+    */
+    public void releasePhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+
 
 }

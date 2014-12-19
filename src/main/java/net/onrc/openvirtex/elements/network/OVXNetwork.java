@@ -39,6 +39,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.datapath.Switch;
 import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.link.OVXLink;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
@@ -88,6 +89,9 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
     private final BitSetIndex hostCounter;
     private final Map<OVXPort, Host> hostMap;
     private final OVXFlowManager flowManager;
+    
+    private final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     /**
      * Instantiates a virtual network. Only use if you have reserved the tenantId
@@ -315,17 +319,23 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
             final short... vportNumber) throws IndexOutOfBoundException {
         final PhysicalSwitch physicalSwitch = PhysicalNetwork.getInstance()
                 .getSwitch(physicalDpid);
-        final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber);
-
-        final OVXPort ovxPort;
-        if (vportNumber.length == 0) {
-            ovxPort = new OVXPort(this.tenantId, physicalPort, true);
+        final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber); 
+        if (physicalPort.isEdge() && 
+    			physicalPort.isUsed() && 
+    			(linkField == OVXLinkField.VLAN)) {
+        	// This edge PhysicalPort is already used by one tenant.
+        	return null;
         } else {
-            ovxPort = new OVXPort(this.tenantId, physicalPort, true,
-                    vportNumber[0]);
+        	final OVXPort ovxPort;
+            if (vportNumber.length == 0) {
+                ovxPort = new OVXPort(this.tenantId, physicalPort, true);
+            } else {
+                ovxPort = new OVXPort(this.tenantId, physicalPort, true,
+                        vportNumber[0]);
+            }
+            ovxPort.register();
+            return ovxPort;
         }
-        ovxPort.register();
-        return ovxPort;
     }
 
     /**

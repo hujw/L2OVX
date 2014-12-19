@@ -30,6 +30,7 @@ import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionDataLayerDestination;
 import org.openflow.protocol.action.OFActionDataLayerSource;
+import org.openflow.protocol.action.OFActionStripVirtualLan;
 import org.openflow.protocol.action.OFActionVirtualLanIdentifier;
 
 /**
@@ -97,9 +98,11 @@ public class OVXLinkUtils {
         final MACAddress mac = MACAddress
                 .valueOf((srcMac.toLong() & 0xFFFFFF) << 24 | dstMac.toLong()
                         & 0xFFFFFF);
-        // modify by hujw
-        //this.tenantId = (int) (mac.toLong() >> 48 - vNets);
-        this.tenantId = tenantId;
+//        if (tenantId == null)
+//        	this.tenantId = (int) (mac.toLong() >> (48 - vNets));
+//        else 
+        	this.tenantId = tenantId;
+        
         final BitSet bmask = new BitSet((48 - vNets) / 2);
         for (int i = bmask.nextClearBit(0); i < (48 - vNets) / 2; i = bmask
                 .nextClearBit(i + 1)) {
@@ -252,8 +255,13 @@ public class OVXLinkUtils {
         if (linkField == OVXLinkField.MAC_ADDRESS) {
             match.setDataLayerSource(this.getSrcMac().toBytes());
             match.setDataLayerDestination(this.getDstMac().toBytes());
-            //hujw
-            match.setDataLayerVirtualLan(this.getVlan());
+//            // modified by hujw (next, we can try to use this.getVlan(). But must confirm 
+//            // this vlan come from "tenantId")
+//            match.setDataLayerVirtualLan(Short.parseShort(this.tenantId.toString()));
+//            // end
+            
+            log.info("match {} ", match);
+            
         } else if (linkField == OVXLinkField.VLAN) {
             match.setDataLayerVirtualLan(this.getVlan());
         }
@@ -272,9 +280,14 @@ public class OVXLinkUtils {
             actions.add(new OFActionDataLayerSource(this.getSrcMac().toBytes()));
             actions.add(new OFActionDataLayerDestination(this.getDstMac()
                     .toBytes()));
+//            // modified by hujw (next, we can try to use this.getVlan(). But must confirm 
+//            // this vlan come from "tenantId")
+//            actions.add(new OFActionVirtualLanIdentifier(this.tenantId.shortValue()));
+//            // end
         } else if (linkField == OVXLinkField.VLAN) {
             actions.add(new OFActionVirtualLanIdentifier(this.getVlan()));
         }
+        OVXLinkUtils.log.info("setLinkFields {}, {}",actions.get(0), actions.get(1));
         return actions;
     }
 
@@ -293,8 +306,19 @@ public class OVXLinkUtils {
                 macList = this.getOriginalMacAddresses();
                 actions.add(new OFActionDataLayerSource(macList.get(0)
                         .toBytes()));
+                
+                OVXLinkUtils.log.info(new OFActionDataLayerSource(macList.get(0)
+                        .toBytes()));
+                
                 actions.add(new OFActionDataLayerDestination(macList.get(1)
                         .toBytes()));
+                
+                OVXLinkUtils.log.info(new OFActionDataLayerSource(macList.get(1)
+                        .toBytes()));
+//                // modified by hujw (return to the original setting.
+//                // that means strip the vlan tag.)
+//                actions.add(new OFActionStripVirtualLan());
+//                // end
             } catch (NetworkMappingException e) {
                 OVXLinkUtils.log.error("Unable to restore actions: " + e);
             }
@@ -302,10 +326,9 @@ public class OVXLinkUtils {
             if (linkField == OVXLinkField.VLAN) {
                 OVXLinkUtils.log
                         .warn("Unable to restore actions, VLANs not supported");
-                // actions.add(new
-                // OFActionVirtualLanIdentifier(getOriginalVlan()));
             }
         }
+        OVXLinkUtils.log.info("unsetLinkFields {}, {}",actions.get(0), actions.get(1));
         return actions;
     }
 }
