@@ -59,6 +59,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 	private PhysicalPort port = null;
 	private OVXPort ovxPort = null;
 	private Integer tenantId = null;
+	private final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
 	@Override
 	public void virtualize(final PhysicalSwitch sw) {
@@ -76,7 +78,12 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		match.loadFromPacket(this.getPacketData(), inport);
 		
 		// modified by hujw
-		this.tenantId = this.fetchTenantId(match, map, true);
+		if (linkField == OVXLinkField.VLAN) {
+			this.tenantId = map.getTenantId(sw.getSwitchId(), port.getPortNumber());
+		} else if (linkField == OVXLinkField.MAC_ADDRESS) {
+			this.tenantId = this.fetchTenantId(match, map, true);
+		}
+		
 		if (this.tenantId == null) {
 			this.log.warn(
 					"PacketIn {} does not belong to any virtual network; "
@@ -86,8 +93,6 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			return;
 		}
 		
-		final OVXLinkField linkField = OpenVirteXController.getInstance()
-                .getOvxLinkField();
 		if (linkField == OVXLinkField.VLAN) {
 			match.setDataLayerVirtualLan(this.tenantId.shortValue());
 		}
@@ -209,7 +214,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
             if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
                 // ARP packet
                 final ARP arp = (ARP) eth.getPayload();
-                this.tenantId = this.fetchTenantId(match, map, true);
+                // hujw
+//                this.tenantId = this.fetchTenantId(match, map, true);
                 try {
                     if (map.hasVirtualIP(srcIP)) {
                         arp.setSenderProtocolAddress(map.getVirtualIP(srcIP)
@@ -252,16 +258,16 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
                     this.tenantId);
             return;
 		}
-
-		this.tenantId = this.fetchTenantId(match, map, true);
-		if (this.tenantId == null) {
-			this.log.warn(
-					"PacketIn {} does not belong to any virtual network; "
-							+ "dropping and installing a temporary drop rule",
-					this);
-			this.installDropRule(sw, match);
-			return;
-		}
+		//hujw
+//		this.tenantId = this.fetchTenantId(match, map, true);
+//		if (this.tenantId == null) {
+//			this.log.warn(
+//					"PacketIn {} does not belong to any virtual network; "
+//							+ "dropping and installing a temporary drop rule",
+//					this);
+//			this.installDropRule(sw, match);
+//			return;
+//		}
 		vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 		this.sendPkt(vSwitch, match, sw);
 		this.log.debug("Layer2 PacketIn {} sent to virtual network {}", this,
@@ -332,11 +338,11 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 	}
 
 	private void installDropRule(final PhysicalSwitch sw, final OFMatch match) {
-//		final OVXFlowMod fm = new OVXFlowMod();
-//		fm.setMatch(match);
-//		fm.setBufferId(this.getBufferId());
-//		fm.setHardTimeout((short) 1);
-//		sw.sendMsg(fm, sw);
+		final OVXFlowMod fm = new OVXFlowMod();
+		fm.setMatch(match);
+		fm.setBufferId(this.getBufferId());
+		fm.setHardTimeout((short) 1);
+		sw.sendMsg(fm, sw);
 	}
 
 	private Integer fetchTenantId(final OFMatch match, final Mappable map,
