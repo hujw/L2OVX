@@ -248,7 +248,9 @@ public final class DBManager {
         System.setErr(null);
         try {
             DBCollection collection = this.collections.get(obj.getDBName());
-            collection.remove(new BasicDBObject(obj.getDBObject()));
+            OVXNetwork nvxn = (OVXNetwork)obj;
+            collection.remove(new BasicDBObject().append(
+            		TenantHandler.TENANT, nvxn.getTenantId()));
         } catch (Exception e) {
             log.error("Failed to remove document from database: {}",
                     e.getMessage());
@@ -425,7 +427,6 @@ public final class DBManager {
                             new ArrayList<OVXNetworkManager>());
                 }
                 this.dpidToMngr.get(physwitch).add(mngr);
-                mngr.setSwitch(physwitch);
             }
         }
     }
@@ -467,7 +468,6 @@ public final class DBManager {
                             .put(dpp, new ArrayList<OVXNetworkManager>());
                 }
                 this.linkToMngr.get(dpp).add(mngr);
-                mngr.setLink(dpp);
 
                 // Register src/dst switches of this link
                 mngr.registerSwitch(srcDpid);
@@ -479,14 +479,12 @@ public final class DBManager {
                             new ArrayList<OVXNetworkManager>());
                 }
                 this.dpidToMngr.get(srcDpid).add(mngr);
-                mngr.setSwitch(srcDpid);
                 mngrs = this.dpidToMngr.get(dstDpid);
                 if (mngrs == null) {
                     this.dpidToMngr.put(dstDpid,
                             new ArrayList<OVXNetworkManager>());
                 }
                 this.dpidToMngr.get(dstDpid).add(mngr);
-                mngr.setSwitch(dstDpid);
             }
         }
     }
@@ -518,7 +516,6 @@ public final class DBManager {
                 this.portToMngr.put(p, new ArrayList<OVXNetworkManager>());
             }
             this.portToMngr.get(p).add(mngr);
-            mngr.setPort(p);
         }
     }
 
@@ -554,7 +551,6 @@ public final class DBManager {
                     this.linkToMngr.put(dpp, new ArrayList<OVXNetworkManager>());
                 }
                 this.linkToMngr.get(dpp).add(mngr);
-                mngr.setLink(dpp);
 
                 // Register switches
                 mngr.registerSwitch(srcDpid);
@@ -564,14 +560,12 @@ public final class DBManager {
                     this.dpidToMngr.put(srcDpid, new ArrayList<OVXNetworkManager>());
                 }
                 this.dpidToMngr.get(srcDpid).add(mngr);
-                mngr.setSwitch(srcDpid);
                 mngrs = this.dpidToMngr.get(dstDpid);
                 if (mngrs == null) {
                     this.dpidToMngr.put(dstDpid,
                             new ArrayList<OVXNetworkManager>());
                 }
                 this.dpidToMngr.get(dstDpid).add(mngr);
-                mngr.setSwitch(dstDpid);
             }
         }
     }
