@@ -87,17 +87,18 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         ovxMatch.setCookie(ovxCookie);
         this.setCookie(ovxMatch.getCookie());
 
-        log.info("####");
         // modified by hujw
         // attach tenantId as the vlan field of ovxMatch
-        ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
-     	// end
+        if (linkField == OVXLinkField.VLAN) {
+        	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
+        	this.log.info("Set vlan id {} in match field on sw {}", 
+        			sw.getTenantId().shortValue(), sw.getName());
+        }
         
         for (final OFAction act : this.getActions()) {
             try {
                 ((VirtualizableAction) act).virtualize(sw,
                         this.approvedActions, ovxMatch);
-                log.info("{}, {}", this.approvedActions, ovxMatch);
             } catch (final ActionVirtualizationDenied e) {
                 this.log.warn("Action {} could not be virtualized; error: {}",
                         act, e.getMessage());
@@ -149,7 +150,9 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         try {
             if (inPort.isEdge()) {
                 this.prependRewriteActions();
-                log.info("{}", this.approvedActions);
+                log.info("This inPort {} on sw {} is an edge port with actions {}", 
+            			inPort.getPortNumber(), inPort.getParentSwitch().getName(), 
+            			this.approvedActions);
             } else {
                 IPMapper.rewriteMatch(sw.getTenantId(), this.match);
                 log.info("rewriteMatch {}", this.match);

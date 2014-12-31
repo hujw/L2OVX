@@ -71,7 +71,7 @@ public class OVXActionOutput extends OFActionOutput implements
         
         // modify by hujw
         // If we know the tenantId, attaching the match with it as vlan field.
-        log.info("before match {}", match);
+        log.info("before OVXMatch {}", match);
         // end
         
         if (match.isFlowMod()) {
@@ -85,7 +85,6 @@ public class OVXActionOutput extends OFActionOutput implements
             // Retrieve the flowMod from the virtual flow map
             final OVXFlowMod fm;
             try {
-            	log.info("after match {}", match);
                 fm = sw.getFlowMod(match.getCookie());
             } catch (MappingException e) {
                 log.warn("FlowMod not found in our FlowTable");
@@ -93,8 +92,10 @@ public class OVXActionOutput extends OFActionOutput implements
             }
             fm.setCookie(match.getCookie());
             // TODO: Check if the FM has been retrieved
-
-            log.info("++++");
+            // Set match on FlowMod message
+            fm.setMatch(match);
+            log.info("after OVXMatch {}", fm.getMatch());
+            
             for (final OVXPort outPort : outPortList) {
                 Integer linkId = 0;
                 Integer flowId = 0;
@@ -122,7 +123,8 @@ public class OVXActionOutput extends OFActionOutput implements
                     // If the inPort belongs to an OVXLink, add rewrite actions
                     // to unset the packet link fields
                     if (inPort.isLink()) {
-                    	log.info("inPort.isLink()");
+                    	log.info("This inPort {} on sw {} is a link port", 
+                    			inPort.getPortNumber(), inPort.getParentSwitch().getName());
                         final OVXPort dstPort = vnet.getNeighborPort(inPort);
                         final OVXLink link = inPort.getLink().getOutLink();
                         if (link != null
@@ -275,7 +277,7 @@ public class OVXActionOutput extends OFActionOutput implements
                  * coming from the end point of the link to the controller.
                  */
                 if (outPort.isLink()) {
-                	log.info("outPort.isLink() - match {}", match);
+                	this.log.info("The outPort is a link port with match field {}", match);
                     final OVXPort dstPort = outPort.getLink().getOutLink()
                             .getDstPort();
                     dstPort.getParentSwitch().sendMsg(
@@ -296,7 +298,6 @@ public class OVXActionOutput extends OFActionOutput implements
                     // and output port
                     if ((inPort == null)
                             || (((OVXBigSwitch) sw).getRoute(inPort, outPort) != null)) {
-                    	log.info("sw instanceof OVXBigSwitch - match {}", match);
                         final PhysicalPort dstPort = outPort.getPhysicalPort();
                         dstPort.getParentSwitch().sendMsg(
                                 new OVXPacketOut(match.getPktData(),
@@ -313,7 +314,6 @@ public class OVXActionOutput extends OFActionOutput implements
                      * modify the packet and send to the physical switch.
                      *
                      */
-                	log.info("single switch - match {}", match);
                     throwException = false;
                     approvedActions.addAll(IPMapper
                             .prependUnRewriteActions(sw.getTenantId(), match));

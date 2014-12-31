@@ -78,6 +78,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		match.loadFromPacket(this.getPacketData(), inport);
 		
 		// modified by hujw
+		// In the "vlan" mode, we need to identify the tenantId from map instead of 
+		// the method "fetchTenantId()". 
 		if (linkField == OVXLinkField.VLAN) {
 			this.tenantId = map.getTenantId(sw.getSwitchId(), port.getPortNumber());
 		} else if (linkField == OVXLinkField.MAC_ADDRESS) {
@@ -93,9 +95,12 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			return;
 		}
 		
-		if (linkField == OVXLinkField.VLAN) {
-			match.setDataLayerVirtualLan(this.tenantId.shortValue());
-		}
+		// remove it because we preserve the original packets and sent them
+		// to the specific controllers. We only rewrite the match field until 
+		// the packets sent to underlying physical switches. 
+//		if (linkField == OVXLinkField.VLAN) {
+//			match.setDataLayerVirtualLan(this.tenantId.shortValue());
+//		}
 		// end
         
 		/*
@@ -105,7 +110,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		 * controller this should be send to.
 		 */
 		if (this.port.isEdge()) {
-			this.log.warn("I am edge!!");
+			this.log.info("This port {} on sw {} is an edge port.", 
+					this.port.getPortNumber(), this.port.getParentSwitch().getName());
 			
 //			this.tenantId = this.fetchTenantId(match, map, true);
 //			if (this.tenantId == null) {
@@ -270,7 +276,10 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 //		}
 		vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 		this.sendPkt(vSwitch, match, sw);
-		this.log.debug("Layer2 PacketIn {} sent to virtual network {}", this,
+		// modified by hujw 
+		// We think this information is important, so rewrite it from 
+		// debug to info.
+		this.log.info("Layer2 PacketIn {} sent to virtual network {}", this,
 				this.tenantId);
 	}
 

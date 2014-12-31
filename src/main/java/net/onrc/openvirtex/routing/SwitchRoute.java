@@ -334,7 +334,10 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
          * last FM to rewrite the MACs - generate the route FMs
          */
         if (this.getDstPort().isEdge()) {
-        	log.info("this.getDstPort().isEdge(), match {}", fm.getMatch());
+        	log.info("This dstPort {} on sw {} is an edge port and with match {}", 
+        			this.getDstPort().getPortNumber(), 
+        			this.getDstPort().getParentSwitch().getName(),
+        			fm.getMatch());
             outActions.addAll(IPMapper.prependUnRewriteActions(sw.getTenantId(), fm.getMatch()));
         } else {
             final OVXLink link = this.getDstPort().getLink().getOutLink();
@@ -378,7 +381,8 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         // We need to rewrite the vlan field in match by tenantId.
         if (linkField == OVXLinkField.VLAN) {
         	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
-            log.info("rewriteMatch: {}", fm.getMatch());	
+        	SwitchRoute.log.info("Set vlan id {} in match field on sw {}", 
+        			sw.getTenantId().shortValue(), sw.getName());	
         }
         // end
 

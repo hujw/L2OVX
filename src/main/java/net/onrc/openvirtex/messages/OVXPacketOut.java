@@ -96,6 +96,8 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
         // attach tenantId as the vlan field of ovxMatch
         if (linkField == OVXLinkField.VLAN) {
         	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
+        	this.log.info("Set vlan id {} in match field on sw {}", 
+        			sw.getTenantId().shortValue(), sw.getName());
         }
         // end
         for (final OFAction act : this.getActions()) {
