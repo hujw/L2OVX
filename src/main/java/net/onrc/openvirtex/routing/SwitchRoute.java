@@ -285,6 +285,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         Collection<OVXFlowMod> flows = this.getSrcPort().getParentSwitch()
                 .getFlowTable().getFlowTable();
         for (OVXFlowMod fe : flows) {
+        	SwitchRoute.log.info("****"+fe.getMatch());
             for (OFAction act : fe.getActions()) {
                 if (act.getType() == OFActionType.OUTPUT
                         && fe.getMatch().getInputPort() == this.getSrcPort()
@@ -304,6 +305,16 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     fm.setCookie(((OVXFlowTable) this.getSrcPort()
                             .getParentSwitch().getFlowTable()).getCookie(fe,
                             true));
+                    // modified by hujw
+                    // attach tenantId as the vlan field of ovxMatch
+                    if (linkField == OVXLinkField.VLAN) {
+                    	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
+                    	SwitchRoute.log.info("switchPath - Set vlan id {} in match field {} on sw {}", 
+                    			sw.getTenantId().shortValue(),
+                    			fm.getMatch(),
+                    			sw.getName());
+                    }
+                    // end
                     this.generateRouteFMs(fm);
                     this.generateFirstFM(fm);
                 }
@@ -339,6 +350,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         			this.getDstPort().getParentSwitch().getName(),
         			fm.getMatch());
             outActions.addAll(IPMapper.prependUnRewriteActions(sw.getTenantId(), fm.getMatch()));
+            log.info("outActions {}", outActions);
         } else {
             final OVXLink link = this.getDstPort().getLink().getOutLink();
             Integer linkId = link.getLinkId();
@@ -420,7 +432,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                         outPort.getPortNumber(), (short) 0xffff)));
                 phyLink.getSrcPort().getParentSwitch()
                         .sendMsg(fm, phyLink.getSrcPort().getParentSwitch());
-                SwitchRoute.log.debug(
+                SwitchRoute.log.info(
                         "Sending big-switch route intermediate fm to sw {}: {}",
                         phyLink.getSrcPort().getParentSwitch().getName(), fm);
 
@@ -441,7 +453,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 fm.setLengthU(OFFlowMod.MINIMUM_LENGTH + actLenght);
                 phyLink.getSrcPort().getParentSwitch()
                         .sendMsg(fm, phyLink.getSrcPort().getParentSwitch());
-                SwitchRoute.log.debug("Sending big-switch route last fm to sw {}: {}",
+                SwitchRoute.log.info("Sending big-switch route last fm to sw {}: {}",
                         phyLink.getSrcPort().getParentSwitch().getName(), fm);
             }
             outPort = phyLink.getDstPort();
