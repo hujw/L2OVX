@@ -38,7 +38,7 @@ import org.openflow.protocol.OFPortStatus.OFPortReason;
  * it.
  */
 public class PhysicalPort extends Port<PhysicalSwitch, PhysicalLink> {
-    private final Map<Integer, HashMap<Integer, OVXPort>> ovxPortMap;
+    private Map<Integer, HashMap<Integer, OVXPort>> ovxPortMap;
     private boolean isUsed = false;
     
     /**

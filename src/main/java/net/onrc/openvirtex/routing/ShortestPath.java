@@ -18,10 +18,12 @@ package net.onrc.openvirtex.routing;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.elements.OVXMap;
@@ -336,17 +338,22 @@ public class ShortestPath implements Routable {
      */
     @Override
     public SwitchRoute getRoute(final OVXBigSwitch vSwitch,
-            final OVXPort srcPort, final OVXPort dstPort) {
+            final OVXPort srcPort, final OVXPort dstPort, boolean... reload) {
+    	boolean isReload =  reload.length > 0 ? reload[0] : false;
         // Check if the route has already been computed
         final ConcurrentHashMap<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>> routeMap = vSwitch
                 .getRouteMap();
         ConcurrentHashMap<OVXPort, SwitchRoute> portRouteMap = routeMap
                 .get(srcPort);
-        if (portRouteMap != null) {
+        if ((portRouteMap != null) && !isReload) {
             SwitchRoute route = portRouteMap.get(dstPort);
             if (route != null) {
                 return route;
             }
+        }
+        
+        if (isReload) {
+        	vSwitch.removeRoute();
         }
 
         // Run Djikstra to compute all the paths (primary and backups)
@@ -409,11 +416,22 @@ public class ShortestPath implements Routable {
                     break;
                 }
             } else {
+//            	// modify by hujw 
+//                // add links of the two edge nodes
+//                PhysicalPort head = path.getFirst().getSrcPort();
+//                PhysicalPort tail = path.getLast().getDstPort();
+                
                 for (final PhysicalLink link : path) {
                     final PhysicalLink revhop = PhysicalNetwork.getInstance()
                             .getLink(link.getDstPort(), link.getSrcPort());
                     revpath.add(revhop);
                 }
+//                // modify by hujw
+//                path.addFirst(new PhysicalLink(srcPort.getPhysicalPort(), head));
+//                path.addLast(new PhysicalLink(tail, dstPort.getPhysicalPort()));
+//                revpath.addFirst(new PhysicalLink(srcPort.getPhysicalPort(), head));
+//                revpath.addLast(new PhysicalLink(tail, dstPort.getPhysicalPort()));
+                
                 Collections.reverse(revpath);
                 try {
                     vSwitch.createRoute(srcPort, dstPort, path, revpath,

@@ -36,7 +36,7 @@ public interface Routable {
      * @return the switch route
      */
     public SwitchRoute getRoute(OVXBigSwitch vSwitch, OVXPort srcPort,
-            OVXPort dstPort);
+            OVXPort dstPort, boolean... reload);
 
     /**
      * Gets the name of the routing policy.

@@ -95,8 +95,10 @@ public class OVXBigSwitch extends OVXSwitch {
      *            the egress port on the big switch
      * @return The route
      */
-    public SwitchRoute getRoute(final OVXPort srcPort, final OVXPort dstPort) {
-        return this.alg.getRoutable().getRoute(this, srcPort, dstPort);
+    public SwitchRoute getRoute(final OVXPort srcPort, final OVXPort dstPort, 
+    		boolean... reload) {
+    	boolean isReload =  reload.length > 0 ? reload[0] : false;
+        return this.alg.getRoutable().getRoute(this, srcPort, dstPort, isReload);
     }
 
     /**
@@ -197,7 +199,7 @@ public class OVXBigSwitch extends OVXSwitch {
                     if (srcPort.getPortNumber() != dstPort.getPortNumber()
                             && srcPort.getPhysicalPort().getParentSwitch() != dstPort
                                     .getPhysicalPort().getParentSwitch()) {
-                        this.getRoute(srcPort, dstPort).register();
+                        this.getRoute(srcPort, dstPort, true).register();
                     }
                 }
             }
@@ -241,18 +243,7 @@ public class OVXBigSwitch extends OVXSwitch {
 
     @Override
     public void unregister() {
-        Iterator<Entry<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>>> itr = this.routeMap
-                .entrySet().iterator();
-        while (itr.hasNext()) {
-            Entry<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>> el = itr
-                    .next();
-            ConcurrentHashMap<OVXPort, SwitchRoute> portmap = el.getValue();
-            for (final SwitchRoute route : portmap.values()) {
-                this.routeCounter.releaseIndex(route.getRouteId());
-                this.map.removeRoute(route);
-            }
-            itr.remove();
-        }
+        this.removeRoute();
         super.unregister();
     }
 
@@ -452,6 +443,23 @@ public class OVXBigSwitch extends OVXSwitch {
         dbObject.put(TenantHandler.BACKUPS, this.alg.getBackups());
 
         return dbObject;
+    }
+    
+    // modify by hujw
+    // Remove the information about the all route in OVXBigSwitch
+    public void removeRoute() {
+    	Iterator<Entry<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>>> itr = this.routeMap
+                .entrySet().iterator();
+        while (itr.hasNext()) {
+            Entry<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>> el = itr
+                    .next();
+            ConcurrentHashMap<OVXPort, SwitchRoute> portmap = el.getValue();
+            for (final SwitchRoute route : portmap.values()) {
+                this.routeCounter.releaseIndex(route.getRouteId());
+                this.map.removeRoute(route);
+            }
+            itr.remove();
+        }
     }
 
 }
