@@ -73,7 +73,7 @@ public class OFFlowMod extends OFMessage implements OFActionFactoryAware,
     protected OFMatch match;
     protected long cookie;
     protected short command;
-    protected short idleTimeout;
+    protected short idleTimeout = 5;
     protected short hardTimeout;
     protected short priority;
     protected int bufferId;
