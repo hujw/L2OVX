@@ -69,11 +69,6 @@ public class OVXActionOutput extends OFActionOutput implements
             return;
         }
         
-        // modify by hujw
-        // If we know the tenantId, attaching the match with it as vlan field.
-        log.info("before OVXMatch {}", match);
-        // end
-        
         if (match.isFlowMod()) {
             /*
              * FlowMod management Iterate through the output port list. Two main
@@ -94,7 +89,6 @@ public class OVXActionOutput extends OFActionOutput implements
             // TODO: Check if the FM has been retrieved
             // Set match on FlowMod message
             fm.setMatch(match);
-            log.info("after OVXMatch {}", fm.getMatch());
             
             for (final OVXPort outPort : outPortList) {
                 Integer linkId = 0;

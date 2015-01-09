@@ -210,7 +210,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
      */
     public void addBackupRoute(Byte priority,
             final List<PhysicalLink> physicalLinks) {
-        this.backupRoutes.put(priority, physicalLinks);
+    	this.backupRoutes.put(priority, physicalLinks);
     }
 
     /**
@@ -275,7 +275,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         this.setPriority(priority);
 
         int counter = 0;
-        SwitchRoute.log.debug(
+        SwitchRoute.log.info(
                 "Virtual network {}: switching all existing flow-mods crossing"
                 + "the big-switch {} route {} between ports ({},{}) to the new path: {}",
                 this.getTenantId(), this.getSrcPort().getParentSwitch()
@@ -284,15 +284,18 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 physicalLinks);
         Collection<OVXFlowMod> flows = this.getSrcPort().getParentSwitch()
                 .getFlowTable().getFlowTable();
+        SwitchRoute.log.info("***flow count {}, p-src {}, p-dst {}", flows.size(), this.getPathSrcPort().getPortNumber(), this.getPathDstPort().getPortNumber());
         for (OVXFlowMod fe : flows) {
-        	SwitchRoute.log.info("****"+fe.getMatch());
             for (OFAction act : fe.getActions()) {
+            	SwitchRoute.log.info("***No, {}, fe {}", counter+1, fe);
+            	// modify by hujw
+            	// inport or outport matches the src port
                 if (act.getType() == OFActionType.OUTPUT
                         && fe.getMatch().getInputPort() == this.getSrcPort()
                                 .getPortNumber()
                         && ((OFActionOutput) act).getPort() == this
                                 .getDstPort().getPortNumber()) {
-                    SwitchRoute.log.debug(
+                    SwitchRoute.log.info(
                             "Virtual network {}, switch {}, route {} between ports {}-{}: switch fm {}",
                             this.getTenantId(), this.getSrcPort()
                                     .getParentSwitch().getSwitchName(), this
@@ -309,15 +312,17 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     // attach tenantId as the vlan field of ovxMatch
                     if (linkField == OVXLinkField.VLAN) {
                     	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
-                    	SwitchRoute.log.info("switchPath - Set vlan id {} in match field {} on sw {}", 
+                    	SwitchRoute.log.info("switchPath - Set vlan id {} in match field {} on " +
+                    			"sw {} with actions {}", 
                     			sw.getTenantId().shortValue(),
                     			fm.getMatch(),
-                    			sw.getName());
+                    			sw.getName(), 
+                    			fm.getActions());
                     }
                     // end
                     this.generateRouteFMs(fm);
                     this.generateFirstFM(fm);
-                }
+                } 
             }
         }
         log.info(
@@ -327,7 +332,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                         .getPortNumber(), this.getDstPort().getPortNumber(),
                 counter);
     }
-
+    
     /**
      * Generates and installs all flow mods needed to bring up switch route,
      * base an a given controller-generated flow mod.
@@ -345,12 +350,12 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
          * last FM to rewrite the MACs - generate the route FMs
          */
         if (this.getDstPort().isEdge()) {
-        	log.info("This dstPort {} on sw {} is an edge port and with match {}", 
-        			this.getDstPort().getPortNumber(), 
-        			this.getDstPort().getParentSwitch().getName(),
-        			fm.getMatch());
             outActions.addAll(IPMapper.prependUnRewriteActions(sw.getTenantId(), fm.getMatch()));
-            log.info("outActions {}", outActions);
+//            log.info("This dstPort {} on sw {} is an edge port and with match {} and actions {}", 
+//        			this.getDstPort().getPortNumber(), 
+//        			this.getDstPort().getParentSwitch().getName(),
+//        			fm.getMatch(), 
+//        			outActions);
         } else {
             final OVXLink link = this.getDstPort().getLink().getOutLink();
             Integer linkId = link.getLinkId();
@@ -393,8 +398,10 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         // We need to rewrite the vlan field in match by tenantId.
         if (linkField == OVXLinkField.VLAN) {
         	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
-        	SwitchRoute.log.info("Set vlan id {} in match field on sw {}", 
-        			sw.getTenantId().shortValue(), sw.getName());	
+        	SwitchRoute.log.info("generateRouteFMs - Set vlan id {} in match field {} on sw {}", 
+        			sw.getTenantId().shortValue(), 
+        			fm.getMatch(),
+        			sw.getName());	
         }
         // end
 
@@ -423,6 +430,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         Collections.reverse(reverseLinks);
 
         for (final PhysicalLink phyLink : reverseLinks) {
+        	SwitchRoute.log.info("#### phyLink {} ", phyLink);
             if (outPort != null) {
                 inPort = phyLink.getSrcPort();
                 fm.getMatch().setInputPort(inPort.getPortNumber());
@@ -545,7 +553,8 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         }
         fm.setLengthU(OFFlowMod.MINIMUM_LENGTH + actLenght);
         this.getSrcSwitch().sendMsg(fm, this.getSrcSwitch());
-        SwitchRoute.log.debug("Sending big-switch route first fm to sw {}: {}", this
+        // modify hujw debug -> info
+        SwitchRoute.log.info("Sending big-switch route first fm to sw {}: {}", this
                 .getSrcSwitch().getName(), fm);
     }
 
@@ -640,7 +649,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
             return false;
         }
     }
-
+    
     /**
      * Gets the set of physical links that make up both primary and backup paths for the switch route.
      *
@@ -674,7 +683,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
             if (this.unusableRoutes.get(curPriority).contains(plink)) {
                 log.info(
                         "Reactivate all inactive paths for virtual network {} big-switch {}"
-                        + "internal route {} between ports ({},{}) in virtual network {} ",
+                        + " internal route {} between ports ({},{}) in virtual network {} ",
                         this.getTenantId(), this.getSrcPort().getParentSwitch()
                                 .getSwitchName(), this.routeId, this
                                 .getSrcPort().getPortNumber(), this
@@ -694,6 +703,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                         this.backupRoutes.put(this.getPriority(), backupLinks);
                         this.switchPath(this.unusableRoutes.get(curPriority),
                                 curPriority);
+                        log.info("$$$ Restore path back!! {}", this.unusableRoutes.get(curPriority));
                     } catch (LinkMappingException e) {
                         log.warn(
                                 "No physical Links mapped to SwitchRoute? : {}",
@@ -701,7 +711,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                         return false;
                     }
                 }
-                it.remove();
+//                it.remove();
             }
         }
         return true;
