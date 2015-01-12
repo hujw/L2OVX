@@ -221,7 +221,7 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         }
         if (this.isEdge && this.isActive) {
             Host host = virtualNetwork.getHost(this);
-            host.unregister();
+            if (host != null) host.unregister();
         } else if (!this.isEdge) {
             this.getLink().egressLink.unregister();
             this.getLink().ingressLink.unregister();
