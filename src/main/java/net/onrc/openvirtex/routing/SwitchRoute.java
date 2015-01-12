@@ -284,12 +284,10 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 physicalLinks);
         Collection<OVXFlowMod> flows = this.getSrcPort().getParentSwitch()
                 .getFlowTable().getFlowTable();
-        SwitchRoute.log.info("***flow count {}, p-src {}, p-dst {}", flows.size(), this.getPathSrcPort().getPortNumber(), this.getPathDstPort().getPortNumber());
+//        SwitchRoute.log.info("***flow count {}, p-src {}, p-dst {}", flows.size(), this.getPathSrcPort().getPortNumber(), this.getPathDstPort().getPortNumber());
         for (OVXFlowMod fe : flows) {
             for (OFAction act : fe.getActions()) {
-            	SwitchRoute.log.info("***No, {}, fe {}", counter+1, fe);
-            	// modify by hujw
-            	// inport or outport matches the src port
+            	SwitchRoute.log.debug("***No, {}, fe {}", counter+1, fe);
                 if (act.getType() == OFActionType.OUTPUT
                         && fe.getMatch().getInputPort() == this.getSrcPort()
                                 .getPortNumber()
@@ -308,20 +306,20 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     fm.setCookie(((OVXFlowTable) this.getSrcPort()
                             .getParentSwitch().getFlowTable()).getCookie(fe,
                             true));
-                    // modified by hujw
-                    // attach tenantId as the vlan field of ovxMatch
-                    if (linkField == OVXLinkField.VLAN) {
-                    	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
-                    	SwitchRoute.log.info("switchPath - Set vlan id {} in match field {} on " +
-                    			"sw {} with actions {}", 
-                    			sw.getTenantId().shortValue(),
-                    			fm.getMatch(),
-                    			sw.getName(), 
-                    			fm.getActions());
-                    }
-                    // end
-                    this.generateRouteFMs(fm);
-                    this.generateFirstFM(fm);
+//                    // modified by hujw
+//                    // attach tenantId as the vlan field of ovxMatch
+//                    if (linkField == OVXLinkField.VLAN) {
+//                    	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
+//                    	SwitchRoute.log.info("switchPath - Set vlan id {} in match field {} on " +
+//                    			"sw {} with actions {}", 
+//                    			sw.getTenantId().shortValue(),
+//                    			fm.getMatch(),
+//                    			sw.getName(), 
+//                    			fm.getActions());
+//                    }
+//                    // end
+                    this.generateRouteFMs(fm.clone());
+                    this.generateFirstFM(fm.clone());
                 } 
             }
         }
@@ -398,7 +396,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         // We need to rewrite the vlan field in match by tenantId.
         if (linkField == OVXLinkField.VLAN) {
         	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
-        	SwitchRoute.log.info("generateRouteFMs - Set vlan id {} in match field {} on sw {}", 
+        	SwitchRoute.log.debug("generateRouteFMs - Set vlan id {} in match field {} on sw {}", 
         			sw.getTenantId().shortValue(), 
         			fm.getMatch(),
         			sw.getName());	
@@ -430,7 +428,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         Collections.reverse(reverseLinks);
 
         for (final PhysicalLink phyLink : reverseLinks) {
-        	SwitchRoute.log.info("#### phyLink {} ", phyLink);
+//        	SwitchRoute.log.info("#### phyLink {} ", phyLink);
             if (outPort != null) {
                 inPort = phyLink.getSrcPort();
                 fm.getMatch().setInputPort(inPort.getPortNumber());
@@ -711,7 +709,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                         return false;
                     }
                 }
-//                it.remove();
+                it.remove();
             }
         }
         return true;

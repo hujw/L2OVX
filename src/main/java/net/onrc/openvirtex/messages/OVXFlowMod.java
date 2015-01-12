@@ -55,7 +55,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
     private final Logger log = LogManager.getLogger(OVXFlowMod.class.getName());
 
     private OVXSwitch sw = null;
-    private final List<OFAction> approvedActions = new LinkedList<OFAction>();
+    private List<OFAction> approvedActions = null;
 
     private long ovxCookie = -1; 
     // hujw
@@ -71,6 +71,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
 
         this.sw = sw;
         FlowTable ft = this.sw.getFlowTable();
+        approvedActions = new LinkedList<OFAction>();
 
         int bufferId = OVXPacketOut.BUFFER_ID_NONE;
         if (sw.getFromBufferMap(this.bufferId) != null) {
@@ -155,7 +156,6 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
             			this.approvedActions);
             } else {
                 IPMapper.rewriteMatch(sw.getTenantId(), this.match);
-                log.info("rewriteMatch {}", this.match);
                 // TODO: Verify why we have two send points... and if this is
                 // the right place for the match rewriting
                 if (inPort != null

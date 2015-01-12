@@ -145,10 +145,10 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
             LinkPair<PhysicalLink> pair, int tid) throws LinkMappingException, 
             NetworkMappingException {
         PhysicalLink plink = pair.getOutLink();
-        PhysicalLink r_plink = pair.getInLink();
+//        PhysicalLink r_plink = pair.getInLink();
         
         doRevertRecovery(sw, map, plink, tid);
-        doRevertRecovery(sw, map, r_plink, tid);
+//        doRevertRecovery(sw, map, r_plink, tid);
     }
     
     private void doRevertRecovery(PhysicalSwitch sw, Mappable map,
@@ -219,18 +219,18 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                     if (!route.tryRecovery(plink)) {
                         route.getSrcPort().handleRouteDisable(this);
                     }
-                    
-                    OVXFlowMod dFm = new OVXFlowMod();
-                    dFm.setCommand(OVXFlowMod.OFPFC_DELETE);
-                    dFm.setMatch(new OFMatch().setWildcards(OFMatch.OFPFW_ALL));
-                    dFm.setOutPort(plink.getSrcPort().getPortNumber());
-                    dFm.setLengthU(OFFlowMod.MINIMUM_LENGTH);
-                    sw.sendMsg(dFm, sw);
-                    log.info("$$$$$$$$$$$$$$$$$$$$$$ outport: {}, fm: {}", plink.getSrcPort().getPortNumber(), dFm);
-//                    final PhysicalPort dstPort = PhysicalNetwork.getInstance()
-//                            .getNeighborPort(plink.getSrcPort());
-//                    log.info("### src {}, dst {}", plink.getSrcPort().getPortNumber(), dstPort.getPortNumber());
-//                	PhysicalNetwork.getInstance().removeLink(plink.getSrcPort(), dstPort);
+//                    
+//                    OVXFlowMod dFm = new OVXFlowMod();
+//                    dFm.setCommand(OVXFlowMod.OFPFC_DELETE);
+//                    dFm.setMatch(new OFMatch().setWildcards(OFMatch.OFPFW_ALL));
+//                    dFm.setOutPort(plink.getSrcPort().getPortNumber());
+//                    dFm.setLengthU(OFFlowMod.MINIMUM_LENGTH);
+//                    sw.sendMsg(dFm, sw);
+//                    log.info("$$$$$$$$$$$$$$$$$$$$$$ outport: {}, fm: {}", plink.getSrcPort().getPortNumber(), dFm);
+////                    final PhysicalPort dstPort = PhysicalNetwork.getInstance()
+////                            .getNeighborPort(plink.getSrcPort());
+////                    log.info("### src {}, dst {}", plink.getSrcPort().getPortNumber(), dstPort.getPortNumber());
+////                	PhysicalNetwork.getInstance().removeLink(plink.getSrcPort(), dstPort);
                 }
             }
         }
