@@ -747,16 +747,23 @@ public final class DBManager {
      */
     @SuppressWarnings({ "unchecked" })
 	private void reloadElements(final OVXNetworkManager mngr) {
-		for (Long dpid : this.dpidToMngr.keySet()) {
-			mngr.setSwitch(dpid);
-		}
-
-		for (DPIDandPort p : this.portToMngr.keySet()) {
-			mngr.setPort(p);
-		}
-
-		for (DPIDandPortPair dpp : this.linkToMngr.keySet()) {
-			mngr.setLink(dpp);
-		}
+    	synchronized (this.dpidToMngr) {
+    		for (Long dpid : this.dpidToMngr.keySet()) {
+    			mngr.setSwitch(dpid);
+    		}
+    	}
+		
+    	synchronized (this.portToMngr) {
+    		for (DPIDandPort p : this.portToMngr.keySet()) {
+    			mngr.setPort(p);
+    		}	
+    	}
+		
+    	synchronized (this.linkToMngr) {
+    		for (DPIDandPortPair dpp : this.linkToMngr.keySet()) {
+    			mngr.setLink(dpp);
+    		}
+    	}
+		
     }
 }
