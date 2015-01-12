@@ -83,8 +83,9 @@ public final class IPMapper {
     public static void rewriteMatch(final Integer tenantId, final OFMatch match) {
     	// modify by hujw
     	if (linkField == OVXLinkField.VLAN) {
-            match.setDataLayerVirtualLan(tenantId.shortValue());
-            log.info("rewriteMatch: {}", match);    		
+    		// do nothing
+//            match.setDataLayerVirtualLan(tenantId.shortValue());
+//            log.debug("rewriteMatch: {}", match);    		
     	} else if (linkField == OVXLinkField.MAC_ADDRESS) {
         	match.setNetworkSource(getPhysicalIp(tenantId, match.getNetworkSource()));
         	match.setNetworkDestination(getPhysicalIp(tenantId,
