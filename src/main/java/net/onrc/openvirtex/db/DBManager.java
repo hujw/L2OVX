@@ -385,7 +385,6 @@ public final class DBManager {
                     this.readOVXLinks(links, mngr);
                     this.readOVXPorts(ports, mngr);
                     this.readOVXRoutes(routes, mngr);
-                    this.reloadElements(mngr);
                     DBManager.log
                             .info("Virtual network {} waiting for {} switches, {} links and {} ports",
                                     mngr.getTenantId(), mngr.getSwitchCount(),
@@ -737,33 +736,5 @@ public final class DBManager {
                 }
             }
         }
-    }
-    
-    /**
-     * Reloads all elements (e.g., switches, links, routes or ports) in 
-     * the network manager when restarting the OVX instance. 
-     *
-     * @param mngrs list of virtual network managers
-     */
-    @SuppressWarnings({ "unchecked" })
-	private void reloadElements(final OVXNetworkManager mngr) {
-    	synchronized (this.dpidToMngr) {
-    		for (Long dpid : this.dpidToMngr.keySet()) {
-    			mngr.setSwitch(dpid);
-    		}
-    	}
-		
-    	synchronized (this.portToMngr) {
-    		for (DPIDandPort p : this.portToMngr.keySet()) {
-    			mngr.setPort(p);
-    		}	
-    	}
-		
-    	synchronized (this.linkToMngr) {
-    		for (DPIDandPortPair dpp : this.linkToMngr.keySet()) {
-    			mngr.setLink(dpp);
-    		}
-    	}
-		
     }
 }

@@ -15,8 +15,6 @@
  ******************************************************************************/
 package net.onrc.openvirtex.messages;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -25,28 +23,21 @@ import java.util.Set;
 
 import net.onrc.openvirtex.elements.Mappable;
 import net.onrc.openvirtex.elements.datapath.OVXBigSwitch;
-import net.onrc.openvirtex.elements.datapath.OVXFlowTable;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
-import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.LinkPair;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
-import net.onrc.openvirtex.messages.actions.OVXActionOutput;
 import net.onrc.openvirtex.routing.SwitchRoute;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFPhysicalPort.OFPortState;
-import org.openflow.protocol.action.OFAction;
-import org.openflow.protocol.action.OFActionOutput;
-import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFPortStatus;
 
 public class OVXPortStatus extends OFPortStatus implements Virtualizable {
@@ -68,11 +59,10 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
         try {
             Set<Integer> vnets = map.listVirtualNetworks().keySet();
             for (Integer tenantId : vnets) {
-            	/* handle vLinks/routes containing phyLink to/from this port. */
+                /* handle vLinks/routes containing phyLink to/from this port. */
                 if ((pair != null) && (pair.exists())) {
                     handleLinkChange(sw, map, pair, tenantId);
                 }
-                
                 List<Map<Integer, OVXPort>> vports = p.getOVXPorts(tenantId);
                 /* cycle through all OVXPorts for this port. */
                 Iterator<Map<Integer, OVXPort>> pItr = vports.iterator();
@@ -90,7 +80,7 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                             /* try to remove OVXPort, vLinks, routes */
                             vport.unMapHost();
                             vport.handlePortDelete(this);
-//                            sw.removePort(p);
+                            sw.removePort(p);
                         } else if (isReason(OFPortReason.OFPPR_MODIFY)) {
                             if (isState(OFPortState.OFPPS_LINK_DOWN)) {
                                 /* set ports as edge, but don't remove vLinks */
@@ -142,19 +132,11 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
      * @throws NetworkMappingException
      */
     private void handleLinkChange(PhysicalSwitch sw, Mappable map,
-            LinkPair<PhysicalLink> pair, int tid) throws LinkMappingException, 
+            LinkPair<PhysicalLink> pair, int tid) throws LinkMappingException,
             NetworkMappingException {
         PhysicalLink plink = pair.getOutLink();
-//        PhysicalLink r_plink = pair.getInLink();
-        
-        doRevertRecovery(sw, map, plink, tid);
-//        doRevertRecovery(sw, map, r_plink, tid);
-    }
-    
-    private void doRevertRecovery(PhysicalSwitch sw, Mappable map,
-            PhysicalLink plink, int tid) throws LinkMappingException,
-            NetworkMappingException {
-    	if (!isState(OFPortState.OFPPS_LINK_DOWN)
+
+        if (!isState(OFPortState.OFPPS_LINK_DOWN)
                 && ((plink.getSrcPort().getState() & OFPortState.OFPPS_LINK_DOWN
                         .getValue()) == 0)) {
             OVXNetwork net = map.getVirtualNetwork(tid);
@@ -162,7 +144,7 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                 link.tryRevert(plink);
             }
             for (OVXSwitch ovxSw : net.getSwitches()) {
-            	if (ovxSw instanceof OVXBigSwitch) {
+                if (ovxSw instanceof OVXBigSwitch) {
                     for (Map<OVXPort, SwitchRoute> routeMap : ((OVXBigSwitch) ovxSw)
                             .getRouteMap().values()) {
                         for (SwitchRoute route : routeMap.values()) {
@@ -182,15 +164,15 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                         OVXPort vport = vlink.getSrcPort();
                         vport.unMapHost();
                         vport.handlePortDelete(this);
+                        sw.removePort(plink.getSrcPort());
                     }
-                    sw.removePort(plink.getSrcPort());
                 }
                 if (isReason(OFPortReason.OFPPR_MODIFY)) {
                     if (isState(OFPortState.OFPPS_LINK_DOWN)) {
                         /* couldn't recover, remove link */
                         if (!vlink.tryRecovery(plink)) {
                             vlink.getSrcPort().handlePortDisable(this);
-                        }                    	
+                        }
                     } else if (!isState(OFPortState.OFPPS_LINK_DOWN)
                             && ((plink.getSrcPort().getState() & OFPortState.OFPPS_LINK_DOWN
                                     .getValue()) == 0)) {
@@ -219,18 +201,6 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                     if (!route.tryRecovery(plink)) {
                         route.getSrcPort().handleRouteDisable(this);
                     }
-//                    
-//                    OVXFlowMod dFm = new OVXFlowMod();
-//                    dFm.setCommand(OVXFlowMod.OFPFC_DELETE);
-//                    dFm.setMatch(new OFMatch().setWildcards(OFMatch.OFPFW_ALL));
-//                    dFm.setOutPort(plink.getSrcPort().getPortNumber());
-//                    dFm.setLengthU(OFFlowMod.MINIMUM_LENGTH);
-//                    sw.sendMsg(dFm, sw);
-//                    log.info("$$$$$$$$$$$$$$$$$$$$$$ outport: {}, fm: {}", plink.getSrcPort().getPortNumber(), dFm);
-////                    final PhysicalPort dstPort = PhysicalNetwork.getInstance()
-////                            .getNeighborPort(plink.getSrcPort());
-////                    log.info("### src {}, dst {}", plink.getSrcPort().getPortNumber(), dstPort.getPortNumber());
-////                	PhysicalNetwork.getInstance().removeLink(plink.getSrcPort(), dstPort);
                 }
             }
         }
