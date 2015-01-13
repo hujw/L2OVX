@@ -51,10 +51,15 @@ public class StartOVXNetwork extends ApiHandler<Map<String, Object>> {
             final OVXMap map = OVXMap.getInstance();
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
-
-            virtualNetwork.boot();
-            this.log.info("Booted virtual network {}",
-                    virtualNetwork.getTenantId());
+            
+            if (virtualNetwork.isBooted()) {
+            	this.log.info("This virtual network {} has already started",
+            			virtualNetwork.getTenantId());
+        	}else {
+				virtualNetwork.boot();
+				this.log.info("Booted virtual network {}",
+						virtualNetwork.getTenantId());
+            }
             Map<String, Object> reply = new HashMap<String, Object>(
                     virtualNetwork.getDBObject());
             resp = new JSONRPC2Response(reply, 0);
