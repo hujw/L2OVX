@@ -59,19 +59,16 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
             HandlerUtils.isValidPhysicalPort(tenantId.intValue(),
                     dpid.longValue(), port.shortValue());
 
-
             final OVXMap map = OVXMap.getInstance();
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
             final OVXPort ovxPort = virtualNetwork.createPort(dpid.longValue(),
                     port.shortValue());
 
-
             if (ovxPort == null) {
-                resp = new JSONRPC2Response(
-                        new JSONRPC2Error(
-                                JSONRPC2Error.INTERNAL_ERROR.getCode(),
-                                this.cmdName()), 0);
+            	resp = new JSONRPC2Response(new JSONRPC2Error(
+                        JSONRPC2Error.INTERNAL_ERROR.getCode(), this.cmdName()
+                        + ": Physical port is not exist or already used."), 0);
             } else {
                 this.log.info(
                         "Created virtual port {} on virtual switch {} in virtual network {}",

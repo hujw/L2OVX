@@ -320,9 +320,13 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
         final PhysicalSwitch physicalSwitch = PhysicalNetwork.getInstance()
                 .getSwitch(physicalDpid);
         final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber); 
-        if (physicalPort.isEdge() && 
-    			physicalPort.isUsed() && 
-    			(linkField == OVXLinkField.VLAN)) {
+		boolean isExist = OVXMap.getInstance().getTenantId(
+				physicalPort.getParentSwitch().getSwitchId(), 
+				physicalPort.getPortNumber()) == null ? false : true;
+        if (physicalPort != null && 
+        		(linkField == OVXLinkField.VLAN) && 
+        		physicalPort.isEdge() && 
+        		isExist) {
         	// This edge PhysicalPort is already used by one tenant.
         	return null;
         } else {
