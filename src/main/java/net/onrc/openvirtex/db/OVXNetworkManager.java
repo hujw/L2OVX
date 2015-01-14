@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPAddress;
 import net.onrc.openvirtex.elements.address.OVXIPAddress;
 import net.onrc.openvirtex.elements.datapath.DPIDandPort;
@@ -31,6 +32,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.datapath.Switch;
 import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.link.Link;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.network.PhysicalNetwork;
@@ -65,7 +67,6 @@ public class OVXNetworkManager {
     private Set<DPIDandPort> offlinePorts;
     private Set<DPIDandPort> onlinePorts;
     private boolean bootState;
-    private OVXNetwork virtualNetwork;
 
     private static Logger log = LogManager.getLogger(OVXNetworkManager.class
             .getName());
@@ -81,7 +82,6 @@ public class OVXNetworkManager {
         this.offlinePorts = new HashSet<DPIDandPort>();
         this.onlinePorts = new HashSet<DPIDandPort>();
         this.bootState = false;
-        this.virtualNetwork = this.createNetwork();
     }
 
     public Integer getTenantId() {
@@ -104,34 +104,6 @@ public class OVXNetworkManager {
         return this.bootState;
     }
 
-    /**
-     * Create OVX network based on persistent storage.  
-     * 
-     * @return OVXNetwork
-     */
-    @SuppressWarnings("unchecked")
-	public OVXNetwork createNetwork() {
-    	// Create OVX network
-    	final ArrayList<String> ctrlUrls = (ArrayList<String>) this.vnet
-                .get(TenantHandler.CTRLURLS);
-    	final Integer network = (Integer) this.vnet.get(TenantHandler.NETADD);
-        final IPAddress addr = new OVXIPAddress(network, -1);
-        final Short netMask = ((Integer) this.vnet.get(TenantHandler.NETMASK))
-                .shortValue();
-        
-        try {
-            virtualNetwork = new OVXNetwork(this.tenantId, ctrlUrls, addr,
-                    netMask);
-        } catch (IndexOutOfBoundException e) {
-            OVXNetworkManager.log.error(
-                    "Error recreating virtual network {} from database",
-                    this.tenantId);
-            return null;
-        }
-        virtualNetwork.register();
-        return virtualNetwork;
-    }
-    
     /**
      * Registers switch identified by the given DPID, ensuring
      * the virtual network is spawned only after the switch is online.
@@ -173,7 +145,7 @@ public class OVXNetworkManager {
         this.onlineSwitches.add(dpid);
         if (this.offlineSwitches.isEmpty() && this.offlineLinks.isEmpty()
                 && this.offlinePorts.isEmpty()) {
-            this.createElements();
+            this.createNetwork();
         }
     }
 
@@ -202,7 +174,7 @@ public class OVXNetworkManager {
             this.onlineLinks.add(dpp);
             if (this.offlineSwitches.isEmpty() && this.offlineLinks.isEmpty()
                     && this.offlinePorts.isEmpty()) {
-                this.createElements();
+                this.createNetwork();
             }
         }
     }
@@ -235,7 +207,7 @@ public class OVXNetworkManager {
             this.onlinePorts.add(port);
             if (this.offlineSwitches.isEmpty() && this.offlineLinks.isEmpty()
                     && this.offlinePorts.isEmpty()) {
-                this.createElements();
+                this.createNetwork();
             }
         }
     }
@@ -290,18 +262,35 @@ public class OVXNetworkManager {
     }
 
     /**
-     * Creates elements based on persistent storage, boots
+     * Creates OVX network and elements based on persistent storage, boots
      * network afterwards.
      * TODO: proper error handling (roll-back?).
      */
 
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    private void createElements() {
+    private void createNetwork() {
 
-    	if (this.virtualNetwork == null) return;
         OVXNetworkManager.log.info("Virtual network {} ready for boot",
                 this.tenantId);
-        
+
+        // Create OVX network
+        final ArrayList<String> ctrlUrls = (ArrayList<String>) this.vnet
+                .get(TenantHandler.CTRLURLS);
+        final IPAddress addr = new OVXIPAddress(this.tenantId, (Integer) this.vnet.get(TenantHandler.NETADD));
+        final Short netMask = ((Integer) this.vnet.get(TenantHandler.NETMASK))
+                .shortValue();
+        OVXNetwork virtualNetwork;
+        try {
+            virtualNetwork = new OVXNetwork(this.tenantId, ctrlUrls, addr,
+                    netMask);
+        } catch (IndexOutOfBoundException e) {
+            OVXNetworkManager.log.error(
+                    "Error recreating virtual network {} from database",
+                    this.tenantId);
+            return;
+        }
+        virtualNetwork.register();
+
         // Create OVX switches
         final List<Map<String, Object>> switches = (List<Map<String, Object>>) this.vnet
                 .get(Switch.DB_KEY);
