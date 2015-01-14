@@ -248,9 +248,7 @@ public final class DBManager {
         System.setErr(null);
         try {
             DBCollection collection = this.collections.get(obj.getDBName());
-            OVXNetwork nvxn = (OVXNetwork)obj;
-            collection.remove(new BasicDBObject().append(
-            		TenantHandler.TENANT, nvxn.getTenantId()));
+            collection.remove(new BasicDBObject(obj.getDBObject()));
         } catch (Exception e) {
             log.error("Failed to remove document from database: {}",
                     e.getMessage());

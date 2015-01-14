@@ -274,7 +274,6 @@ public class OVXNetworkManager {
         // Create OVX network
         final ArrayList<String> ctrlUrls = (ArrayList<String>) this.vnet
                 .get(TenantHandler.CTRLURLS);
-        //final Integer network = (Integer) this.vnet.get(TenantHandler.NETADD);
         final IPAddress addr = new OVXIPAddress(this.tenantId, (Integer) this.vnet.get(TenantHandler.NETADD));
         final Short netMask = ((Integer) this.vnet.get(TenantHandler.NETMASK))
                 .shortValue();
