@@ -37,6 +37,7 @@ import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.OVXLinkField;
+import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
@@ -55,7 +56,7 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
 
     public OVXPort(final int tenantId, final PhysicalPort port,
             final boolean isEdge, final short portNumber)
-                    throws IndexOutOfBoundException {
+                    throws IndexOutOfBoundException, DuplicateIndexException {
         super(port);
         this.tenantId = tenantId;
         this.physicalPort = port;
@@ -68,7 +69,13 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
             throw new RuntimeException("Unexpected state in OVXMap: "
                     + e.getMessage());
         }
-        this.portNumber = portNumber;
+        
+        if (portNumber == 0) 
+        	this.portNumber = this.parentSwitch.getNextPortNumber();
+        else
+        	this.portNumber = this.parentSwitch.getNextPortNumber(portNumber);
+        
+//        this.portNumber = portNumber;
         this.name = "ovxport-" + this.portNumber;
         this.isEdge = isEdge;
         this.hardwareAddress = port.getHardwareAddress();
@@ -88,10 +95,11 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     }
 
     public OVXPort(final int tenantId, final PhysicalPort port,
-            final boolean isEdge) throws IndexOutOfBoundException {
+            final boolean isEdge) 
+            		throws IndexOutOfBoundException, DuplicateIndexException {
         this(tenantId, port, isEdge, (short) 0);
-        this.portNumber = this.parentSwitch.getNextPortNumber();
-        this.name = "ovxport-" + this.portNumber;
+//        this.portNumber = this.parentSwitch.getNextPortNumber();
+//        this.name = "ovxport-" + this.portNumber;
     }
 
     public Integer getTenantId() {
@@ -378,6 +386,7 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     public void handleRouteDisable(OVXPortStatus stat) {
         if ((this.parentSwitch instanceof OVXBigSwitch)
                 && (stat.isReason(OFPortReason.OFPPR_DELETE))) {
+//                && (stat.isState(OFPortState.OFPPS_LINK_DOWN))) { ???
             Map<OVXPort, SwitchRoute> routes = ((OVXBigSwitch) this.parentSwitch)
                     .getRouteMap().get(this);
             if (routes != null) {
