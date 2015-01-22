@@ -52,16 +52,17 @@ public class StartOVXNetwork extends ApiHandler<Map<String, Object>> {
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
             
-			if (virtualNetwork.isBooted()) {
-				this.log.info("This virtual network {} has already started",
-						virtualNetwork.getTenantId());
-			} else {
+            if (virtualNetwork.isBooted()) {
+            	this.log.info("This virtual network {} has already started",
+            			virtualNetwork.getTenantId());
+        	} else {
 				virtualNetwork.boot();
 				this.log.info("Booted virtual network {}",
 						virtualNetwork.getTenantId());
-			}
-			Map<String, Object> reply = new HashMap<String, Object>(
+            }
+            Map<String, Object> reply = new HashMap<String, Object>(
 					virtualNetwork.getDBObject());
+			reply.put(TenantHandler.IS_BOOTED, virtualNetwork.isBooted());
 			resp = new JSONRPC2Response(reply, 0);
 
         } catch (final MissingRequiredField e) {
