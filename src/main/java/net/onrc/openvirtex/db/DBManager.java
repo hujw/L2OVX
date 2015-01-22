@@ -382,7 +382,8 @@ public final class DBManager {
                     this.readOVXSwitches(switches, mngr);
                     this.readOVXLinks(links, mngr);
                     this.readOVXPorts(ports, mngr);
-                    this.readOVXRoutes(routes, mngr);
+//                    if (!isOVXBigSwitch(switches))
+                    	this.readOVXRoutes(routes, mngr);
                     DBManager.log
                             .info("Virtual network {} waiting for {} switches, {} links and {} ports",
                                     mngr.getTenantId(), mngr.getSwitchCount(),
@@ -734,5 +735,17 @@ public final class DBManager {
                 }
             }
         }
+    }
+    
+    @SuppressWarnings("unchecked")
+    private boolean isOVXBigSwitch(List<Map<String, Object>> switches) {
+    	if (switches == null) return false;
+    	
+    	for (Map<String, Object> sw : switches) {
+            List<Long> physwitches = (List<Long>) sw.get(TenantHandler.DPIDS);
+            if (physwitches.size() > 0) return true;
+    	}
+    	
+    	return false;
     }
 }
