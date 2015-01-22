@@ -597,6 +597,13 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 // discovered
                 obj.remove(TenantHandler.LINK);
                 path.add(obj);
+                // rewrite the priority when this link is in backupRoutes
+                for (byte pri : this.backupRoutes.keySet()) {
+                	if (this.backupRoutes.get(pri).contains(link)) {
+                    	dbObject.put(TenantHandler.PRIORITY, pri);
+                    	break;
+                    }
+                }
             }
             dbObject.put(TenantHandler.PATH, path);
             return dbObject;
