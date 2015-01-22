@@ -316,7 +316,8 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
      * @throws IndexOutOfBoundException
      */
     public OVXPort createPort(final long physicalDpid, final short portNumber,
-            final short... vportNumber) throws IndexOutOfBoundException {
+            final short... vportNumber) 
+            		throws IndexOutOfBoundException, DuplicateIndexException {
         final PhysicalSwitch physicalSwitch = PhysicalNetwork.getInstance()
                 .getSwitch(physicalDpid);
         final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber); 
