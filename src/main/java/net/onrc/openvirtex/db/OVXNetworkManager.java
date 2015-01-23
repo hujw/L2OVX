@@ -21,8 +21,11 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPAddress;
 import net.onrc.openvirtex.elements.address.OVXIPAddress;
 import net.onrc.openvirtex.elements.datapath.DPIDandPort;
@@ -31,6 +34,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.datapath.Switch;
 import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.link.Link;
+import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.network.PhysicalNetwork;
@@ -68,6 +72,9 @@ public class OVXNetworkManager {
 
     private static Logger log = LogManager.getLogger(OVXNetworkManager.class
             .getName());
+    
+    private final OVXLinkField linkField = OpenVirteXController.getInstance()
+            .getOvxLinkField();
 
     public OVXNetworkManager(Map<String, Object> vnet)
             throws IndexOutOfBoundException, DuplicateIndexException {
@@ -288,7 +295,8 @@ public class OVXNetworkManager {
             return;
         }
         virtualNetwork.register();
-
+        // Record all mapping from physical switch to virtual switch 
+        Map<Long, Long> mapDpid = new TreeMap<>();
         // Create OVX switches
         final List<Map<String, Object>> switches = (List<Map<String, Object>>) this.vnet
                 .get(Switch.DB_KEY);
@@ -296,6 +304,18 @@ public class OVXNetworkManager {
             for (Map<String, Object> sw : switches) {
                 List<Long> dpids = (List<Long>) sw.get(TenantHandler.DPIDS);
                 long switchId = (long) sw.get(TenantHandler.VDPID);
+                
+                if (linkField == OVXLinkField.VLAN) {
+                	for (long dpid : dpids) 
+                		if (!mapDpid.containsKey(dpid)) {
+                			mapDpid.put(dpid, switchId);
+                		} else {
+                			OVXNetworkManager.log.error(
+                					"The dpid {} already has a mapping to vdpid {}", 
+                    				dpid, switchId);
+                		}
+                }
+                
                 try {
                     virtualNetwork.createSwitch(dpids, switchId);
                 } catch (IndexOutOfBoundException e) {
@@ -320,15 +340,30 @@ public class OVXNetworkManager {
                 try {
                     virtualNetwork.createPort(physicalDpid, portNumber,
                             vportNumber);
+                    // Start this OVX port
+                    if (linkField == OVXLinkField.VLAN) {
+                    	if (mapDpid.containsKey(physicalDpid)) {
+                    		long vdpid = mapDpid.get(physicalDpid);
+                    		virtualNetwork.startPort(vdpid, vportNumber);
+                    	}
+                    }
                 } catch (IndexOutOfBoundException e) {
                     OVXNetworkManager.log.error(
                             "Error recreating virtual port {} from database",
                             vportNumber);
                     continue;
-                }
+                } catch (DuplicateIndexException e) {
+                	OVXNetworkManager.log.error(
+                            "Error recreating virtual port {} from database, " +
+                            "which has already existed.",
+                            vportNumber);
+                    continue;
+				}
             }
         }
 
+        final List<Map<String, Object>> routes = (List<Map<String, Object>>) this.vnet
+                .get(SwitchRoute.DB_KEY);
         // Create OVX big switch routes if manual
         if (switches != null) {
             for (Map<String, Object> sw : switches) {
@@ -351,8 +386,8 @@ public class OVXNetworkManager {
                 // Only restore routes if manual routing
                 // Remove all stored routes otherwise
                 if (alg == RoutingType.NONE.name()) {
-                    final List<Map<String, Object>> routes = (List<Map<String, Object>>) this.vnet
-                            .get(SwitchRoute.DB_KEY);
+//                    final List<Map<String, Object>> routes = (List<Map<String, Object>>) this.vnet
+//                            .get(SwitchRoute.DB_KEY);
                     // List of created routeId's per switch
                     final Map<Long, List<Integer>> routeIds = new HashMap<Long, List<Integer>>();
                     if (routes != null) {
@@ -478,8 +513,13 @@ public class OVXNetworkManager {
             }
         }
 
+        if ((routes == null) || (routes.size() <= 0)) {
+        	OVXNetworkManager.log.warn("Please boot virtual network {} later", this.tenantId);
+        	return;
+        }
         // Start network
         virtualNetwork.boot();
         this.bootState = true;
+        OVXNetworkManager.log.info("Virtual network {} is booted", this.tenantId);
     }
 }

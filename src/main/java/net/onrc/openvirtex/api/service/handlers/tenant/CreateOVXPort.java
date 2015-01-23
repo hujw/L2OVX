@@ -24,6 +24,7 @@ import net.onrc.openvirtex.api.service.handlers.TenantHandler;
 import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
+import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.InvalidDPIDException;
 import net.onrc.openvirtex.exceptions.InvalidPortException;
@@ -59,16 +60,19 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
             HandlerUtils.isValidPhysicalPort(tenantId.intValue(),
                     dpid.longValue(), port.shortValue());
 
+
             final OVXMap map = OVXMap.getInstance();
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
             final OVXPort ovxPort = virtualNetwork.createPort(dpid.longValue(),
                     port.shortValue());
 
+
             if (ovxPort == null) {
-            	resp = new JSONRPC2Response(new JSONRPC2Error(
-                        JSONRPC2Error.INTERNAL_ERROR.getCode(), this.cmdName()
-                        + ": Physical port is not exist or already used."), 0);
+                resp = new JSONRPC2Response(
+                        new JSONRPC2Error(
+                                JSONRPC2Error.INTERNAL_ERROR.getCode(),
+                                this.cmdName()), 0);
             } else {
                 this.log.info(
                         "Created virtual port {} on virtual switch {} in virtual network {}",
@@ -114,7 +118,14 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
             resp = new JSONRPC2Response(new JSONRPC2Error(
                     JSONRPC2Error.INVALID_PARAMS.getCode(), this.cmdName()
                             + ": " + e.getMessage()), 0);
-        }
+        } catch (DuplicateIndexException e) {
+        	resp = new JSONRPC2Response(
+                    new JSONRPC2Error(
+                            JSONRPC2Error.INVALID_PARAMS.getCode(),
+                            this.cmdName()
+                                    + ": Impossible to create the virtual port, there exists one in this virtual switch : "
+                                    + e.getMessage()), 0);
+		}
         return resp;
     }
 

@@ -38,6 +38,7 @@ import net.onrc.openvirtex.elements.host.Host;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.exceptions.ControllerStateException;
+import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.MappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
@@ -208,6 +209,12 @@ public abstract class OVXSwitch extends Switch<OVXPort> implements Persistable {
     public short getNextPortNumber() throws IndexOutOfBoundException {
         return this.portCounter.getNewIndex().shortValue();
     }
+    
+	public short getNextPortNumber(short index)
+			throws IndexOutOfBoundException, DuplicateIndexException {
+		return this.portCounter.getNewIndex(Integer.valueOf(index))
+				.shortValue();
+	}
 
     /**
      * Releases the given port number so it can be reused.

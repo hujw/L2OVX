@@ -39,6 +39,7 @@ import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
+import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.PortMappingException;
@@ -249,7 +250,7 @@ public class MapAddTest extends TestCase {
                 try {
                     vport = new OVXPort(1, p, false, p.getPortNumber());
                     v.addPort(vport);
-                } catch (IndexOutOfBoundException e) {
+                } catch (IndexOutOfBoundException | DuplicateIndexException e) {
                     continue;
                 }
             }
@@ -278,7 +279,7 @@ public class MapAddTest extends TestCase {
         try {
             /* whether edge or not doesn't matter for us */
             return new OVXPort(tenant, port, false, portnum);
-        } catch (IndexOutOfBoundException e) {
+        } catch (IndexOutOfBoundException | DuplicateIndexException e) {
             return null;
         }
     }
