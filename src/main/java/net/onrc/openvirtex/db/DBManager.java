@@ -306,14 +306,14 @@ public final class DBManager {
      * Removes all routes of switch for given tenant.
      *
      * @param tenantId the tenant ID
-     * @param switchId the dpid
+     * @param vswitchId the vdpid
      */
-    public void removeSwitchPath(int tenantId, long switchId) {
+    public void removeSwitchPath(int tenantId, long vswitchId) {
         BasicDBObject query = new BasicDBObject();
         query.put(TenantHandler.TENANT, tenantId);
         BasicDBObject pull = new BasicDBObject("$pull", new BasicDBObject(
-                SwitchRoute.DB_KEY, new BasicDBObject(TenantHandler.DPID,
-                        switchId)));
+                SwitchRoute.DB_KEY, new BasicDBObject(TenantHandler.VDPID,
+                		vswitchId)));
         PrintStream ps = System.err;
         System.setErr(null);
         try {

@@ -367,7 +367,7 @@ public class OVXNetworkManager {
         // Create OVX big switch routes if manual
         if (switches != null) {
             for (Map<String, Object> sw : switches) {
-                long switchId = (long) sw.get(TenantHandler.VDPID);
+                long vswitchId = (long) sw.get(TenantHandler.VDPID);
                 String alg = (String) sw.get(TenantHandler.ALGORITHM);
                 Integer backups = (Integer) sw.get(TenantHandler.BACKUPS);
                 // Don't bother with switch routes if not a bigswitch
@@ -375,11 +375,11 @@ public class OVXNetworkManager {
                     continue;
                 }
                 try {
-                    virtualNetwork.setOVXBigSwitchRouting(switchId, alg,
+                    virtualNetwork.setOVXBigSwitchRouting(vswitchId, alg,
                             backups.byteValue());
                 } catch (RoutingAlgorithmException e) {
                     OVXNetworkManager.log.error(
-                            "Error setting routing mode for switch {} from database", switchId);
+                            "Error setting routing mode for switch {} from database", vswitchId);
                     continue;
                 }
 
@@ -433,7 +433,7 @@ public class OVXNetworkManager {
                     }
                 } else {
                     DBManager.getInstance()
-                            .removeSwitchPath(tenantId, switchId);
+                            .removeSwitchPath(tenantId, vswitchId);
                 }
             }
         }
