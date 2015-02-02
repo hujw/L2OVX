@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
+import net.onrc.openvirtex.db.DBManager;
 import net.onrc.openvirtex.elements.address.OVXIPAddress;
 import net.onrc.openvirtex.elements.address.PhysicalIPAddress;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
@@ -700,6 +701,8 @@ public final class OVXMap implements Mappable {
             removeRoute(l, tid, route);
         }
         this.routetoPhyLinkMap.remove(route);
+//        DBManager.getInstance().remove(route);
+        DBManager.getInstance().removeSwitchPath(tid, route.getSwitchId());
     }
 
     /**

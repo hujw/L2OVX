@@ -151,6 +151,7 @@ public class OVXActionOutput extends OFActionOutput implements
                         approvedActions.add(new OFActionOutput(
                                 OFPort.OFPP_IN_PORT.getValue()));
                     }
+                    route.register();
                 } else {
                     /*
                      * SingleSwitch and BigSwitch with inPort & outPort

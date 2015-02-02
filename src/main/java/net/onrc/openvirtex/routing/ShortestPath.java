@@ -352,9 +352,9 @@ public class ShortestPath implements Routable {
             }
         }
         
-        if (isReload) {
-        	vSwitch.removeRoute();
-        }
+//        if (isReload) {
+//        	vSwitch.removeRoute();
+//        }
 
         // Run Djikstra to compute all the paths (primary and backups)
         List<PhysicalLink> phyLinkList = new ArrayList<PhysicalLink>(

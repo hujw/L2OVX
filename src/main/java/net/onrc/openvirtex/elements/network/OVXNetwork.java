@@ -246,6 +246,7 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
     public void stop() {
         for (final OVXSwitch sw : this.getSwitches()) {
             sw.tearDown();
+            if (sw instanceof OVXBigSwitch) ((OVXBigSwitch)sw).removeRoute();
         }
         this.isBooted = false;
     }

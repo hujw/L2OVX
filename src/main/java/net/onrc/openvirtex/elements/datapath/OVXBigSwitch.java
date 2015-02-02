@@ -199,7 +199,7 @@ public class OVXBigSwitch extends OVXSwitch {
                     if (srcPort.getPortNumber() != dstPort.getPortNumber()
                             && srcPort.getPhysicalPort().getParentSwitch() != dstPort
                                     .getPhysicalPort().getParentSwitch()) {
-                        this.getRoute(srcPort, dstPort, true).register();
+                        this.getRoute(srcPort, dstPort);//.register();
                     }
                 }
             }
@@ -454,9 +454,10 @@ public class OVXBigSwitch extends OVXSwitch {
             Entry<OVXPort, ConcurrentHashMap<OVXPort, SwitchRoute>> el = itr
                     .next();
             ConcurrentHashMap<OVXPort, SwitchRoute> portmap = el.getValue();
-            for (final SwitchRoute route : portmap.values()) {
+            for (SwitchRoute route : portmap.values()) {
                 this.routeCounter.releaseIndex(route.getRouteId());
                 this.map.removeRoute(route);
+                log.info("###[removeRoute] {}", route);
             }
             itr.remove();
         }
