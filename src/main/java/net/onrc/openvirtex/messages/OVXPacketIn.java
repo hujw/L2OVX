@@ -74,9 +74,16 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		port = sw.getPort(inport);
 		Mappable map = sw.getMap();
 
+//		// (For aggregate mode in HP 6600 switch)
+//		Ethernet test_eth = new Ethernet();
+//		test_eth.deserialize(this.getPacketData(), 0,
+//				this.getPacketData().length);
+//		
+//		test_eth.setVlanID((short)-1).setPriorityCode((byte)0);
+//		this.setPacketData(test_eth.serialize());
+		
 		final OFMatch match = new OFMatch();
 		match.loadFromPacket(this.getPacketData(), inport);
-		
 		// modified by hujw
 		// In the "vlan" mode, we need to identify the tenantId from map instead of 
 		// the method "fetchTenantId()". 
@@ -223,7 +230,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
                 // ARP packet
                 final ARP arp = (ARP) eth.getPayload();
                 // hujw
-//                this.tenantId = this.fetchTenantId(match, map, true);
+//                this.tenantId = this.fetchTenantId(match, map, true);	
                 try {
                     if (map.hasVirtualIP(srcIP)) {
                         arp.setSenderProtocolAddress(map.getVirtualIP(srcIP)
