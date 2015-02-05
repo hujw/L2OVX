@@ -349,6 +349,7 @@ public final class OVXMap implements Mappable {
     @Override
     public void addRoute(final SwitchRoute route,
             final List<PhysicalLink> physicalLinks) {
+    	if (physicalLinks == null || physicalLinks.size() == 0) return;
         route.setPathSrcPort(physicalLinks.get(0).getSrcPort());
         route.setPathDstPort(physicalLinks.get(physicalLinks.size() - 1)
                 .getDstPort());
