@@ -15,6 +15,8 @@
  ******************************************************************************/
 package net.onrc.openvirtex.linkdiscovery;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,6 +38,7 @@ import net.onrc.openvirtex.exceptions.PortMappingException;
 import net.onrc.openvirtex.messages.OVXMessageFactory;
 import net.onrc.openvirtex.messages.OVXPacketIn;
 import net.onrc.openvirtex.packet.Ethernet;
+import net.onrc.openvirtex.packet.LLDP;
 import net.onrc.openvirtex.packet.OVXLLDP;
 
 import org.apache.logging.log4j.LogManager;
@@ -48,6 +51,7 @@ import org.openflow.protocol.OFType;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.action.OFActionType;
+import org.openflow.util.HexString;
 
 /**
  * Run discovery process from a physical switch. Ports are initially labeled as
@@ -70,7 +74,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
     // number of unacknowledged probes per port
     private final Map<Short, AtomicInteger> portProbeCount;
     // number of probes to send before link is removed
-    private static final short MAX_PROBE_COUNT = 3;
+    private static final short MAX_PROBE_COUNT = 5;
     private Iterator<Short> slowIterator;
     private final OVXMessageFactory ovxMessageFactory = OVXMessageFactory
             .getInstance();
@@ -98,7 +102,8 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         this.lldpPacket.setSwitch(this.sw);
         this.ethPacket = new Ethernet();
         this.ethPacket.setEtherType(Ethernet.TYPE_LLDP);
-        this.ethPacket.setDestinationMACAddress(OVXLLDP.LLDP_NICIRA);
+//        this.ethPacket.setDestinationMACAddress(OVXLLDP.LLDP_NICIRA);
+        this.ethPacket.setDestinationMACAddress(OVXLLDP.LLDP_MULTICAST);
         this.ethPacket.setPayload(this.lldpPacket);
         this.ethPacket.setPad(true);
         this.useBDDP = useBDDP.length > 0 ? useBDDP[0] : false;
@@ -230,7 +235,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         final short alen = SwitchDiscoveryManager.countActionsLen(actionsList);
         this.lldpPacket.setPort(port);
         this.ethPacket.setSourceMACAddress(port.getHardwareAddress());
-
+        
         final byte[] lldp = this.ethPacket.serialize();
         packetOut.setActionsLength(alen);
         packetOut.setPacketData(lldp);
@@ -308,7 +313,19 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         final OVXPacketIn pi = (OVXPacketIn) msg;
         final byte[] pkt = pi.getPacketData();
 
-        if (OVXLLDP.isOVXLLDP(pkt)) {
+        // Modify by hujw
+        Ethernet eth = new Ethernet();
+        eth.deserialize(pi.getPacketData(), 0,
+                pi.getPacketData().length);
+        
+        if (eth.getPayload() instanceof LLDP == false) {
+        	this.log.debug("This packet_in message is not an LLDP");
+        	return;
+        }
+        	
+        LLDP lldp = (LLDP) eth.getPayload();
+        
+        if (OVXLLDP.isOVXLLDP(lldp)) {
             final PhysicalPort dstPort = (PhysicalPort) sw.getPort(pi
                     .getInPort());
             final DPIDandPort dp = OVXLLDP.parseLLDP(pkt);
@@ -317,9 +334,14 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             final PhysicalPort srcPort = srcSwitch.getPort(dp.getPort());
 
             PhysicalNetwork.getInstance().createLink(srcPort, dstPort);
-            PhysicalNetwork.getInstance().ackProbe(srcPort);
+            //PhysicalNetwork.getInstance().ackProbe(srcPort);
+            this.ackProbe(srcPort);
         } else {
-            this.log.warn("Ignoring unknown LLDP");
+        	long chassisId = ByteBuffer.wrap(lldp.getChassisId().serialize()).getLong();
+        	short portNum = ByteBuffer.wrap(lldp.getPortId().getValue()).getShort();
+        	
+            this.log.warn("Ignoring unknown LLDP - Chassis TLV {}, Port TLV {}", 
+            		HexString.toHexString(chassisId), portNum);
         }
     }
 
@@ -374,7 +396,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
                 if (!this.slowIterator.hasNext()) {
                     this.slowIterator = this.slowPorts.iterator();
                 }
-                if (this.slowIterator.hasNext()) {
+                while (this.slowIterator.hasNext()) {
                     final short portNumber = this.slowIterator.next();
                     this.log.debug("sending slow probe to port {}", portNumber);
                     try {

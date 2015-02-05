@@ -17,6 +17,7 @@ package net.onrc.openvirtex.packet;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -317,28 +318,46 @@ public class OVXLLDP extends LLDP {
      * @param packet
      * @return
      */
-    public static boolean isOVXLLDP(byte[] packet) {
-        if (packet.length < OVX_LLDP_SIZE) {
-            return false;
+    public static boolean isOVXLLDP(LLDP lldp) {
+        // Modify by hujw (2015/02/03)
+        //
+        // One bug in current OVX. It would like to identify this packet is 
+        // LLDP fired from OVX or not. But, in some vendor switch, such as 
+        // EdgeCore, will add extra information into this packet. So, it leads
+        // OVX cannot identify correctly. 
+        // The solution is to use object instead of byte array search. In this
+        // way, the identical process will be independent on the order of byte
+        // array.
+        Iterator<LLDPTLV> it = lldp.getOptionalTLVList().iterator();
+        while (it.hasNext()) {
+        	LLDPTLV tlv = it.next();
+        	if (Arrays.equals(tlv.serialize(), NAME_TLV)) 
+        		return true;
         }
-
-        // Extra offset due to VLAN tag
-        final ByteBuffer bb = ByteBuffer.wrap(packet);
-        int offset = 0;
-        if (bb.getShort(ETHERTYPE_OFFSET) != Ethernet.TYPE_LLDP
-                && bb.getShort(ETHERTYPE_OFFSET) != Ethernet.TYPE_BSN) {
-            offset = 4;
-        }
-
-        // Compare packet's organizationally specific TLVs to the expected
-        // values
-        for (int i = 0; i < OUI_TLV.length; i++) {
-            if (packet[NAME_TLV_OFFSET + offset + i] != OUI_TLV[i]) {
-                return false;
-            }
-        }
-
-        return true;
+        
+        return false;
+    	
+//        if (packet.length < OVX_LLDP_SIZE) {
+//            return false;
+//        }
+//
+//        // Extra offset due to VLAN tag
+//        final ByteBuffer bb = ByteBuffer.wrap(packet);
+//        int offset = 0;
+//        if (bb.getShort(ETHERTYPE_OFFSET) != Ethernet.TYPE_LLDP
+//                && bb.getShort(ETHERTYPE_OFFSET) != Ethernet.TYPE_BSN) {
+//            offset = 4;
+//        }
+//
+//        // Compare packet's organizationally specific TLVs to the expected
+//        // values
+//        for (int i = 0; i < OUI_TLV.length; i++) {
+//            if (packet[NAME_TLV_OFFSET + offset + i] != OUI_TLV[i]) {
+//                return false;
+//            }
+//        }
+//
+//        return true;
     }
 
     /**

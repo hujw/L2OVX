@@ -142,6 +142,10 @@ public class LLDP extends BasePacket {
          * ((Ethernet) this.parent).setEtherType(this.ethType); }
          */
 
+		if (this.parent != null && this.parent instanceof Ethernet) {
+			((Ethernet) this.parent).setEtherType(this.ethType);
+		}
+
         return data;
     }
 
