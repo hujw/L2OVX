@@ -95,9 +95,9 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		
 		if (this.tenantId == null) {
 			this.log.warn(
-					"PacketIn {} does not belong to any virtual network; "
+					"PacketIn with {} does not belong to any virtual network; "
 							+ "dropping and installing a temporary drop rule",
-					this);
+							match);
 			this.installDropRule(sw, match);
 			return;
 		}
@@ -135,14 +135,13 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			 */
 			vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 			this.ovxPort = this.port.getOVXPort(this.tenantId, 0);
+			this.log.info("Edge PacketIn {} will be sent to virtual network {}", match,
+					this.tenantId);
 			this.sendPkt(vSwitch, match, sw);
 			if (!(linkField == OVXLinkField.VLAN)) {
 				this.learnHostIP(match, map);
 			}
 			this.learnAddresses(match, map);
-			this.log.info("Edge PacketIn {} sent to virtual network {}", match,
-					this.tenantId);
-            
 			return;
 		}
 

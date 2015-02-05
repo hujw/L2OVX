@@ -96,8 +96,8 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
         // attach tenantId as the vlan field of ovxMatch
         if (linkField == OVXLinkField.VLAN) {
         	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
-        	this.log.info("Set vlan id {} in match field on sw {}", 
-        			sw.getTenantId().shortValue(), sw.getName());
+        	this.log.info("Set vlan id {} in OVXMatch {} on sw {}", 
+        			sw.getTenantId().shortValue(), ovxMatch, sw.getName());
         }
         // end
         for (final OFAction act : this.getActions()) {
@@ -134,7 +134,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
         if (U16.f(this.getInPort()) < U16.f(OFPort.OFPP_MAX.getValue())) {
             OVXMessageUtil.translateXid(this, inport);
         }
-        this.log.debug("Sending packet-out to sw {}: {}", sw.getName(), this);
+        this.log.info("Sending packet-out to sw {}: {}", sw.getName(), this);
         sw.sendSouth(this, inport);
     }
 

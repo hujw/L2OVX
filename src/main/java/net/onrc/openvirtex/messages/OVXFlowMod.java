@@ -151,8 +151,9 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         try {
             if (inPort.isEdge()) {
                 this.prependRewriteActions();
-                log.info("This inPort {} on sw {} is an edge port with actions {}", 
+                log.info("This inPort {} on sw {} is an edge port with {} and actions {}", 
             			inPort.getPortNumber(), inPort.getParentSwitch().getName(), 
+            			this.getMatch(),
             			this.approvedActions);
             } else {
                 IPMapper.rewriteMatch(sw.getTenantId(), this.match);
