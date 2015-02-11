@@ -30,6 +30,7 @@ import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerDestination;
 import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerSource;
 import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
 import net.onrc.openvirtex.messages.actions.VirtualizableAction;
+import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.protocol.OVXMatch;
 
 import org.apache.logging.log4j.LogManager;
@@ -38,6 +39,7 @@ import org.openflow.protocol.OFError.OFBadRequestCode;
 import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPort;
+import org.openflow.protocol.Wildcards;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
@@ -83,6 +85,14 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 
             this.match = new OFMatch().loadFromPacket(cause.getPacketData(),
                     this.inPort);
+            
+            if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
+        		this.match = this.match.setWildcards(Wildcards.FULL
+            			.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
+            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+            			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+        	}
+            
             this.setBufferId(cause.getBufferId());
             ovxMatch = new OVXMatch(match);
             ovxMatch.setPktData(cause.getPacketData());
@@ -91,15 +101,16 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
                 this.setLengthU(this.getLengthU() + this.packetData.length);
             }
         }
-
-        // modified by hujw
-        // attach tenantId as the vlan field of ovxMatch
-        if (linkField == OVXLinkField.VLAN) {
-        	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
-        	this.log.info("Set vlan id {} in OVXMatch {} on sw {}", 
-        			sw.getTenantId().shortValue(), ovxMatch, sw.getName());
-        }
-        // end
+// 		  // 02/10 modified by hujw
+//		  // remove this because packet_out does not need to tag any information
+//        // it just remain the original match.
+//        // attach tenantId as the vlan field of ovxMatch
+//        if (linkField == OVXLinkField.VLAN) {
+//        	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
+//        	this.log.info("Set vlan id {} in OVXMatch {} on sw {}", 
+//        			sw.getTenantId().shortValue(), ovxMatch, sw.getName());
+//        }
+//        // end
         for (final OFAction act : this.getActions()) {
             try {
                 ((VirtualizableAction) act).virtualize(sw,

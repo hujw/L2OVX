@@ -46,6 +46,7 @@ import org.apache.logging.log4j.Logger;
 import org.openflow.protocol.OFError.OFFlowModFailedCode;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.Wildcards;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
 
@@ -79,6 +80,13 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         }
         final short inport = this.getMatch().getInputPort();
 
+        if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
+        	this.match = this.match.setWildcards(Wildcards.FULL
+        			.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
+        			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+    	}
+        
         /* let flow table process FlowMod, generate cookie as needed */
         boolean pflag = ft.handleFlowMods(this.clone());
 
