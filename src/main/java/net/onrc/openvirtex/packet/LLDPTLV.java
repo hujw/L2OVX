@@ -110,7 +110,7 @@ public class LLDPTLV {
     public LLDPTLV deserialize(final ByteBuffer bb) {
         short sscratch;
         sscratch = bb.getShort();
-        this.type = (byte) (sscratch >> 9 & 0x7f);
+        this.type = (byte) ((sscratch >> 9) & 0x7f);
         this.length = (short) (sscratch & 0x1ff);
         if (this.length > 0) {
             this.value = new byte[this.length];

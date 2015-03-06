@@ -17,6 +17,7 @@ package net.onrc.openvirtex.linkdiscovery;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,11 +30,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import net.onrc.openvirtex.core.io.OVXSendMsg;
+import net.onrc.openvirtex.db.OVXNetworkManager;
+import net.onrc.openvirtex.elements.Mappable;
+import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.datapath.DPIDandPort;
 import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.datapath.Switch;
+import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
+import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.PortMappingException;
 import net.onrc.openvirtex.messages.OVXMessageFactory;
 import net.onrc.openvirtex.messages.OVXPacketIn;
@@ -277,6 +283,32 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
                 .setLength((short) (OFPacketOut.MINIMUM_LENGTH + alen + bddp.length));
         return packetOut;
     }
+    
+    private void forwardLLDPPacketOut(final PhysicalPort port, 
+    		final Ethernet eth) throws PortMappingException {
+        if (port == null) {
+            throw new PortMappingException(
+                    "Cannot forward LLDP associated with a nonexistent port");
+        }
+        final OFPacketOut packetOut = (OFPacketOut) this.ovxMessageFactory
+                .getMessage(OFType.PACKET_OUT);
+        packetOut.setBufferId(OFPacketOut.BUFFER_ID_NONE);
+        final List<OFAction> actionsList = new LinkedList<OFAction>();
+        final OFActionOutput out = (OFActionOutput) this.ovxMessageFactory
+                .getAction(OFActionType.OUTPUT);
+        out.setPort(port.getPortNumber());
+        actionsList.add(out);
+        packetOut.setActions(actionsList);
+        final short alen = SwitchDiscoveryManager.countActionsLen(actionsList);
+        
+        final byte[] lldp = eth.serialize();
+        packetOut.setActionsLength(alen);
+        packetOut.setPacketData(lldp);
+        packetOut
+                .setLength((short) (OFPacketOut.MINIMUM_LENGTH + alen + lldp.length));
+        
+        this.sendMsg(packetOut, this);
+    }
 
 
     @Override
@@ -337,11 +369,89 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             //PhysicalNetwork.getInstance().ackProbe(srcPort);
             this.ackProbe(srcPort);
         } else {
-        	long chassisId = ByteBuffer.wrap(lldp.getChassisId().serialize()).getLong();
-        	short portNum = ByteBuffer.wrap(lldp.getPortId().getValue()).getShort();
+        	final PhysicalPort dstPort = (PhysicalPort) sw.getPort(pi
+                    .getInPort());
+        	ByteBuffer bb = ByteBuffer.wrap(lldp.getChassisId().getValue());
+        	int subtype = bb.get(0);
+        	/**
+        	 * 4: MAC address
+        	 * 7: Local
+        	 * Ex:
+        	 * 
+        	 * Chassis ID TLV (1), length 22
+          	 *	Subtype Local (7): dpid:006478485966e572
+          	 *
+          	 * Chassis ID TLV (1), length 7
+          	 *  Subtype MAC address (4): b4:99:ba:b7:00:6c (oui Unknown)
+          	 *  
+          	 *  Must minus 1 means subtype
+        	 */
         	
-            this.log.warn("Ignoring unknown LLDP - Chassis TLV {}, Port TLV {}", 
-            		HexString.toHexString(chassisId), portNum);
+        	String chassisId = "";
+        	bb = removeBytesFromStart(bb, 1);
+        	
+        	switch (subtype) {
+            case 4:
+            	chassisId = HexString.toHexString(bb.array());
+                break;
+            case 7:
+            	chassisId = new String(bb.array());
+                break;
+            default:
+                break;
+            }
+        	
+//        	
+//        	if (subtype == 4)
+//        		chassisId = ByteBuffer.wrap(lldp.getChassisId()).getLong();
+
+        	
+            /**
+             * There are several ways in which a port may be identified, as shown in the following table. 
+             * A port ID subtype, included in the TLV, indicates how the port is being referenced 
+             * in the Port ID field.
+             * 2: Port component
+             * Ex:
+             * 
+             * Port ID TLV (2), length 5
+             * Subtype Port component (2):
+             * 0x0000:  0200 0000 11
+             */
+            // length minus 2 byte (e.g., 0200), then the remain part is port info.  
+        	bb = ByteBuffer.wrap(lldp.getPortId().getValue());
+        	bb.position(lldp.getPortId().getLength()-2);
+        	short portNum = bb.getShort();
+        	
+            this.log.warn("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
+            		HexString.toHexString(dstPort.getParentSwitch().getSwitchId()), 
+            		pi.getInPort(), chassisId, portNum);
+            
+            final Mappable map = OVXMap.getInstance();
+            
+            Integer tenantId = map.getTenantId(dstPort);
+            if (tenantId != null) {
+            	ArrayList<PhysicalPort> ports = map.getPhysicalPorts(tenantId);
+            	if (ports.contains(dstPort))
+            		ports.remove(dstPort);
+            	
+            	for (int i=0; i<ports.size(); i++) {
+            		try {
+            			final SwitchDiscoveryManager sdm = PhysicalNetwork.getInstance()
+                    			.getDiscoveryManager(ports.get(i)
+                                .getParentSwitch().getSwitchId());
+            			
+            			sdm.forwardLLDPPacketOut(ports.get(i), eth);
+						this.log.warn("Forwarding LLDP generated from {} to {}/{}", 
+								eth.getSourceMAC(), 
+								ports.get(i).getParentSwitch().getName(), 
+								ports.get(i).getPortNumber());
+					} catch (PortMappingException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+            	}
+            }
+            
         }
     }
 
@@ -418,6 +528,16 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         // reschedule timer
         PhysicalNetwork.getTimer().newTimeout(this, this.probeRate,
                 TimeUnit.MILLISECONDS);
+    }
+    
+    private ByteBuffer removeBytesFromStart(ByteBuffer bf, int n) {
+    	ByteBuffer newbf = ByteBuffer.allocate(bf.capacity()-n);
+    	int index = 0;
+        for(int i = n; i < bf.capacity(); i++) {
+        	newbf.put(index++, bf.get(i));
+        }
+        newbf.position(0);
+        return newbf;
     }
 
 }
