@@ -89,8 +89,9 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		// In the "vlan" mode, we need to identify the tenantId from map instead of 
 		// the method "fetchTenantId()". 
 		if (linkField == OVXLinkField.VLAN) {
-			this.tenantId = map.getTenantId(sw.getSwitchId(),
-					port.getPortNumber());
+//			this.tenantId = map.getTenantId(sw.getSwitchId(),
+//					port.getPortNumber());
+			this.tenantId = map.getTenantId(port);
 			
 			if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
         		match = match.setWildcards(Wildcards.FULL
@@ -108,7 +109,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 					"PacketIn with {} does not belong to any virtual network; "
 							+ "dropping and installing a temporary drop rule",
 							match);
-			this.installDropRule(sw, match);
+//			this.installDropRule(sw, match);
 			return;
 		}
 		
@@ -127,7 +128,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		 * controller this should be send to.
 		 */
 		if (this.port.isEdge()) {
-			this.log.info("This port {} on sw {} is an edge port.", this.port
+			this.log.debug("This port {} on sw {} is an edge port.", this.port
 					.getPortNumber(), this.port.getParentSwitch().getName());
 
 			// this.tenantId = this.fetchTenantId(match, map, true);
@@ -145,11 +146,11 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			 */
 			vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 			this.ovxPort = this.port.getOVXPort(this.tenantId, 0);
-//			if (match.getDataLayerType() != Ethernet.TYPE_LLDP){
+			if (match.getDataLayerType() != Ethernet.TYPE_LLDP){
 				this.log.info(
 						"Edge PacketIn {} will be sent to virtual network {}",
 						match, this.tenantId);
-//			}
+			}
 			this.sendPkt(vSwitch, match, sw);
 			if (!(linkField == OVXLinkField.VLAN)) {
 				this.learnHostIP(match, map);

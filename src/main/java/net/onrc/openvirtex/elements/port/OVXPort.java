@@ -139,13 +139,11 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
 			this.parentSwitch.generateFeaturesReply();
 		}
 		// bind the edge PhysicalPort and tenantId
-		boolean isExist = OVXMap.getInstance().getTenantId(
-				this.physicalPort.getParentSwitch().getSwitchId(), 
-				this.physicalPort.getPortNumber()) == null ? false : true;
+		boolean isExist = OVXMap.getInstance().
+				getTenantId(this.physicalPort) == null ? false : true;
 		if (this.physicalPort.isEdge() && !isExist) {
-        	OVXMap.getInstance().bindPhysicalPort(
-        			this.physicalPort.getParentSwitch().getSwitchId(), 
-        			this.physicalPort.getPortNumber(), this.tenantId);
+			OVXMap.getInstance().bindPhysicalPort(
+					this.physicalPort, this.tenantId);
         }
 		DBManager.getInstance().save(this);
     }
@@ -186,7 +184,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
             return;
         }
         this.isActive = true;
-        this.state = OFPortState.OFPPS_STP_FORWARD.getValue();
+//        this.state = OFPortState.OFPPS_STP_FORWARD.getValue();
+//        // modify by hujw
+//        if (this.state == 0)
+        this.state = OFPortState.OFPPS_STP_LISTEN.getValue();
         this.parentSwitch.generateFeaturesReply();
         if (this.parentSwitch.isActive()) {
             sendStatusMsg(OFPortReason.OFPPR_MODIFY);
@@ -289,12 +290,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         // release the information between the edge PhysicalPort 
         // and the tenant
         boolean isExist = OVXMap.getInstance().getTenantId(
-				this.physicalPort.getParentSwitch().getSwitchId(), 
-				this.physicalPort.getPortNumber()) == null ? false : true;
+        		this.physicalPort) == null ? false : true;
         if (isExist) {
         	OVXMap.getInstance().releasePhysicalPort(
-        			this.physicalPort.getParentSwitch().getSwitchId(), 
-        			this.physicalPort.getPortNumber(), this.tenantId);
+        			this.physicalPort, this.tenantId);
         }
     }
 

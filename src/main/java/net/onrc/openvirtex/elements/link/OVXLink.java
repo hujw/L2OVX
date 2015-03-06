@@ -114,23 +114,18 @@ public class OVXLink extends Link<OVXPort, OVXSwitch> {
         // release the information between the edge PhysicalPort 
         // and the tenant
         boolean isExist = this.map.getTenantId(
-        		this.srcPort.getPhysicalPort().getParentSwitch().getSwitchId(), 
-        		this.srcPort.getPhysicalPort().getPortNumber()) == null ? false : true;
+        		this.srcPort.getPhysicalPort()) == null ? false : true;
         if (isExist) {
         	OVXMap.getInstance().releasePhysicalPort(
-        			this.srcPort.getPhysicalPort().getParentSwitch().getSwitchId(), 
-        			this.srcPort.getPhysicalPort().getPortNumber(), this.tenantId);
-        }
+        			this.srcPort.getPhysicalPort(), this.tenantId);
+        } 
         
         this.srcPort.getPhysicalPort().setOVXPort(this.srcPort);
 		// bind the edge PhysicalPort and tenantId
 		isExist = OVXMap.getInstance().getTenantId(
-				this.srcPort.getPhysicalPort().getParentSwitch().getSwitchId(),
-				this.srcPort.getPhysicalPort().getPortNumber()) == null ? false : true;
+				this.srcPort.getPhysicalPort()) == null ? false : true;
 		if (this.srcPort.getPhysicalPort().isEdge() && !isExist) {
-			OVXMap.getInstance().bindPhysicalPort(
-					this.srcPort.getPhysicalPort().getParentSwitch().getSwitchId(),
-					this.srcPort.getPhysicalPort().getPortNumber(), this.tenantId);
+			OVXMap.getInstance().bindPhysicalPort(this.srcPort.getPhysicalPort(), this.tenantId);
 		}
     }
 
