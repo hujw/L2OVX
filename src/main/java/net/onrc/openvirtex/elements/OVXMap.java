@@ -71,7 +71,7 @@ public final class OVXMap implements Mappable {
     private RadixTree<OVXIPAddress> physicalIPMap;
     private RadixTree<ConcurrentHashMap<Integer, PhysicalIPAddress>> virtualIPMap;
     private RadixTree<Integer> macMap;
-    private RadixTree<Integer> physicalPortMap;
+    private ConcurrentHashMap<PhysicalPort, Integer> physicalPortMap;
 
     /**
      * Creates a new map instance, by initializing all mapping data structures.
@@ -90,8 +90,7 @@ public final class OVXMap implements Mappable {
                 new DefaultCharArrayNodeFactory());
         this.macMap = new ConcurrentRadixTree<Integer>(
                 new DefaultCharArrayNodeFactory());
-        this.physicalPortMap = new ConcurrentRadixTree<Integer>(
-                new DefaultCharArrayNodeFactory());
+        this.physicalPortMap = new ConcurrentHashMap<PhysicalPort, Integer>();
     } 
 
     /**
@@ -840,20 +839,32 @@ public final class OVXMap implements Mappable {
     }
 
 	@Override
-	public void bindPhysicalPort(long physicalDpid, short portNumber,
-			Integer tenantId) {
-		this.physicalPortMap.put(physicalDpid+"-"+portNumber, tenantId);
+	public void bindPhysicalPort(PhysicalPort port, Integer tenantId) {
+		if (!physicalPortMap.contains(port)) 
+			this.physicalPortMap.put(port, tenantId);
 	}
 
 	@Override
-	public Integer getTenantId(long physicalDpid, short portNumber) {
-		return this.physicalPortMap.getValueForExactKey(physicalDpid+"-"+portNumber);
+	public Integer getTenantId(PhysicalPort port) {
+		return this.physicalPortMap.get(port);
 	}
 
 	@Override
-	public void releasePhysicalPort(long physicalDpid, short portNumber,
-			Integer tenantId) {
-		this.physicalPortMap.remove(physicalDpid+"-"+portNumber);
+	public void releasePhysicalPort(PhysicalPort port, Integer tenantId) {
+		this.physicalPortMap.remove(port);
+	}
+	
+	@Override
+	public ArrayList<PhysicalPort> getPhysicalPorts(Integer tenantId) {
+		ArrayList<PhysicalPort> ports = new ArrayList<PhysicalPort>();
+		
+		Iterator<PhysicalPort> it = this.physicalPortMap.keySet().iterator();
+		while (it.hasNext()) {
+			PhysicalPort p = it.next();
+			if (this.physicalPortMap.get(p).equals(tenantId))
+				ports.add(p);
+		}
+		return ports;
 	}
 
 }

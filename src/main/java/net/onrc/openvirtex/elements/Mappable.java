@@ -15,6 +15,7 @@
  ******************************************************************************/
 package net.onrc.openvirtex.elements;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -356,7 +357,8 @@ public interface Mappable {
      * @param portNumber the physical port number
      * @param tenantId the tenant ID.
      */
-    public void bindPhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+//    public void bindPhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+    public void bindPhysicalPort(PhysicalPort port, Integer tenantId);
     
     /**
      * Gets the tenant ID associated with the given PhysicalSwitch and PhysicalPort.
@@ -365,7 +367,8 @@ public interface Mappable {
      * @param portNumber the physical port number
      * @return tenant ID associated with the given physical DPID and physical port number
      */
-    public Integer getTenantId(long physicalDpid, short portNumber);
+//    public Integer getTenantId(long physicalDpid, short portNumber);
+    public Integer getTenantId(PhysicalPort port);
     
     /**
      * Removes the MAC address from the map.
@@ -374,7 +377,8 @@ public interface Mappable {
     * @param portNumber the physical port number
     * @param tenantId the tenant ID
     */
-    public void releasePhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+//    public void releasePhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
+    public void releasePhysicalPort(PhysicalPort port, Integer tenantId);
 
-
+    public ArrayList<PhysicalPort> getPhysicalPorts(Integer tenantId);
 }
