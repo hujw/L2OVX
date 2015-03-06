@@ -49,6 +49,7 @@ import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.Wildcards;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
+import org.openflow.util.HexString;
 
 public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
 
@@ -86,6 +87,10 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
         			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
     	}
+        
+        if (this.match.getDataLayerType() == Ethernet.TYPE_IPV4) {
+        	this.log.info("@@@@@[IPv4: {}]@@@@", this.match);
+        }
         
         /* let flow table process FlowMod, generate cookie as needed */
         boolean pflag = ft.handleFlowMods(this.clone());
@@ -159,7 +164,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         try {
             if (inPort.isEdge()) {
                 this.prependRewriteActions();
-                log.info("This inPort {} on sw {} is an edge port with {} and actions {}", 
+                log.info("@@@@@ {} on sw {} is an edge port with {} and actions {}", 
             			inPort.getPortNumber(), inPort.getParentSwitch().getName(), 
             			this.getMatch(),
             			this.approvedActions);

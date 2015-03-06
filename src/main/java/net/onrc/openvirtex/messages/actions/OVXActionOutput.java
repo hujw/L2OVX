@@ -298,7 +298,7 @@ public class OVXActionOutput extends OFActionOutput implements
                                 new OVXPacketOut(match.getPktData(),
                                         OFPort.OFPP_NONE.getValue(),
                                         dstPort.getPortNumber()), sw);
-                        this.log.info("PacketOut for a bigSwitch port, "
+                        this.log.debug("PacketOut for a bigSwitch port, "
                                 + "generate a packet from Physical Port {}/{}",
                                 dstPort.getParentSwitch().getSwitchName(),
                                 dstPort.getPortNumber());
