@@ -274,7 +274,6 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         // Set the route priority to the new one
         this.setPriority(priority);
 
-        int counter = 0;
         SwitchRoute.log.info(
                 "Virtual network {}: switching all existing flow-mods crossing"
                 + "the big-switch {} route {} between ports ({},{}) to the new path: {}",
@@ -287,7 +286,6 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
 //        SwitchRoute.log.info("***flow count {}, p-src {}, p-dst {}", flows.size(), this.getPathSrcPort().getPortNumber(), this.getPathDstPort().getPortNumber());
         for (OVXFlowMod fe : flows) {
             for (OFAction act : fe.getActions()) {
-            	SwitchRoute.log.debug("***No, {}, fe {}", counter+1, fe);
                 if (act.getType() == OFActionType.OUTPUT
                         && fe.getMatch().getInputPort() == this.getSrcPort()
                                 .getPortNumber()
@@ -300,8 +298,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                                     .getRouteId(), this.getSrcPort()
                                     .getPortNumber(), this.getDstPort()
                                     .getPortNumber(), fe);
-                    counter++;
-
+                    
                     OVXFlowMod fm = fe.clone();
                     fm.setCookie(((OVXFlowTable) this.getSrcPort()
                             .getParentSwitch().getFlowTable()).getCookie(fe,
@@ -318,6 +315,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
 //                    			fm.getActions());
 //                    }
 //                    // end
+                    SwitchRoute.log.info("[[command of fm]]: {}", fm.getCommand());
                     this.generateRouteFMs(fm.clone());
                     this.generateFirstFM(fm.clone());
                 } 
@@ -327,8 +325,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                 "Virtual network {}, switch {}, route {} between ports {}-{}: {} flow-mod switched to the new path",
                 this.getTenantId(), this.getSrcPort().getParentSwitch()
                         .getSwitchName(), this.getRouteId(), this.getSrcPort()
-                        .getPortNumber(), this.getDstPort().getPortNumber(),
-                counter);
+                        .getPortNumber(), this.getDstPort().getPortNumber());
         this.register();
     }
     
@@ -543,7 +540,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     .getValue()));
         }
 
-        fm.setCommand(OFFlowMod.OFPFC_MODIFY);
+//        fm.setCommand(OFFlowMod.OFPFC_MODIFY);
         fm.setActions(approvedActions);
         int actLenght = 0;
         for (final OFAction act : approvedActions) {
