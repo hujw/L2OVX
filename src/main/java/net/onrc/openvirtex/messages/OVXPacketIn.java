@@ -66,6 +66,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 	@Override
 	public void virtualize(final PhysicalSwitch sw) {
 
+		long startTime = System.nanoTime();
 		OVXSwitch vSwitch = OVXMessageUtil.untranslateXid(this, sw);
 		/*
 		 * Fetching port from the physical switch
@@ -152,6 +153,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 						match, this.tenantId);
 			}
 			this.sendPkt(vSwitch, match, sw);
+			long totTime = System.nanoTime() - startTime;
+			this.log.info("### Edge PacketIn executing time {} ###", totTime);
 			if (!(linkField == OVXLinkField.VLAN)) {
 				this.learnHostIP(match, map);
 			}
@@ -284,6 +287,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			this.sendPkt(vSwitch, match, sw);
 			this.log.debug("IPv4 PacketIn {} sent to virtual network {}", this,
 					this.tenantId);
+			long totTime = startTime - System.nanoTime();
+			this.log.info("### IPv4/ARP PacketIn executing time {} ###", totTime);
 			return;
 		}
 		// hujw
@@ -303,6 +308,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		// debug to info.
 		this.log.info("Layer2 PacketIn {} sent to virtual network {}", this,
 				this.tenantId);
+		long totTime = startTime - System.nanoTime();
+		this.log.info("### Layer2 PacketIn executing time {} ###", totTime);
 	}
 
 	private void learnHostIP(OFMatch match, Mappable map) {
