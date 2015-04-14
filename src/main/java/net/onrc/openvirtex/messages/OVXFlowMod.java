@@ -81,12 +81,12 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         }
         final short inport = this.getMatch().getInputPort();
 
-        if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
+//        if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
         	this.match = this.match.setWildcards(Wildcards.FULL
-        			.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
-        			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
-        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-    	}
+        			.matchOn(Flag.IN_PORT)//.matchOn(Flag.DL_TYPE)
+        			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+//        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+//    	}
         
         if (this.match.getDataLayerType() == Ethernet.TYPE_IPV4) {
         	this.log.info("@@@@@[IPv4: {}]@@@@", this.match);

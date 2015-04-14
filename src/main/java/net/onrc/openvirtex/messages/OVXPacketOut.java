@@ -86,12 +86,12 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
             this.match = new OFMatch().loadFromPacket(cause.getPacketData(),
                     this.inPort);
             
-            if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
+//            if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
         		this.match = this.match.setWildcards(Wildcards.FULL
-            			.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
-            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
-            			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-        	}
+            			.matchOn(Flag.IN_PORT)//.matchOn(Flag.DL_TYPE)
+            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+//            			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+//        	}
             
             this.setBufferId(cause.getBufferId());
             ovxMatch = new OVXMatch(match);
