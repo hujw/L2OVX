@@ -171,26 +171,26 @@ public class SwitchChannelHandler extends OFChannelHandler {
 
             @Override
             void processOFError(final SwitchChannelHandler h, final OFError m) {
-                try {
-                    if (m.getOffendingMsg().getType() != OFType.BARRIER_REQUEST) {
-                        h.log.error(
-                                "Error waiting for features (type:{}, code:{})",
-                                m.getErrorType(), m.getErrorCode());
-                        if (h.channel.isOpen()) {
-                            h.channel.close();
-                        }
-                    } else {
-                        h.log.warn(
-                                "Barrier Request message not understood by switch {}; "
-                                        + "if it's an HP switch you are probably ok.",
-                                        HexString.toHexString(h.featuresReply
-                                                .getDatapathId()));
-                    }
-
-                } catch (MessageParseException e) {
-                    // TODO Auto-generated catch block
-                    e.printStackTrace();
-                }
+//                try {
+//                    if (m.getOffendingMsg().getType() != OFType.BARRIER_REQUEST) {
+//                        h.log.error(
+//                                "Error waiting for features (type:{}, code:{})",
+//                                m.getErrorType(), m.getErrorCode());
+//                        if (h.channel.isOpen()) {
+//                            h.channel.close();
+//                        }
+//                    } else {
+//                        h.log.warn(
+//                                "Barrier Request message not understood by switch {}; "
+//                                        + "if it's an HP switch you are probably ok.",
+//                                        HexString.toHexString(h.featuresReply
+//                                                .getDatapathId()));
+//                    }
+//
+//                } catch (MessageParseException e) {
+//                    // TODO Auto-generated catch block
+//                    e.printStackTrace();
+//                }
             }
 
             @Override
@@ -381,8 +381,8 @@ public class SwitchChannelHandler extends OFChannelHandler {
          */
         protected void unhandledMessageReceived(final SwitchChannelHandler h,
                 final OFMessage m) {
-            h.log.warn(this.getSwitchStateMessage(h, m,
-                    "Received unhandled message; moving swiftly along..."));
+//            h.log.warn(this.getSwitchStateMessage(h, m,
+//                    "Received unhandled message; moving swiftly along..."));
         }
 
         /**
@@ -511,7 +511,7 @@ public class SwitchChannelHandler extends OFChannelHandler {
         void processOFHello(final SwitchChannelHandler h, final OFHello m)
                 throws IOException {
             // we only expect hello in the WAIT_HELLO state
-            this.illegalMessageReceived(h, m);
+//            this.illegalMessageReceived(h, m);
         }
 
         /**
