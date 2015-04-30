@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
+import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.RoutingAlgorithmException;
@@ -335,6 +336,26 @@ public class OVXBigSwitch extends OVXSwitch {
 
             this.addToRouteMap(ingress, egress, rtEntry);
             this.addToRouteMap(egress, ingress, revRtEntry);
+            
+			for (final PhysicalLink edge : path) {
+				PhysicalLink plink = PhysicalNetwork.getInstance().getLink(
+						edge.getSrcPort(), edge.getDstPort());
+				if (plink != null) {
+					plink.increaseLinkCount();
+					log.info("increase edge {}, count {}", plink,
+							plink.getLinkCount());
+				}
+			}
+
+			for (final PhysicalLink revedge : revpath) {
+				PhysicalLink plink = PhysicalNetwork.getInstance().getLink(
+						revedge.getSrcPort(), revedge.getDstPort());
+				if (plink != null) {
+					plink.increaseLinkCount();
+					log.info("increase revedge {}, count {}", plink,
+							plink.getLinkCount());
+				}
+			}
 
             log.info(
                     "Add route for big-switch {} between ports ({},{}) with priority: {} and path: {}",

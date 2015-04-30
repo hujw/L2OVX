@@ -43,6 +43,7 @@ public abstract class Link<T1 extends Port, T2 extends Switch> implements
         Persistable {
 
     private Logger log = LogManager.getLogger(Link.class.getName());
+    private int count = 0;
 
     /**
      * Database keyword for links.
@@ -173,12 +174,12 @@ public abstract class Link<T1 extends Port, T2 extends Switch> implements
         if (this.srcPort.getCurrentThroughput().equals(
                 this.dstPort.getCurrentThroughput())) {
             // Throughput is expressed in Mbps.
-            this.log.debug("Metric for link between {}-{},{}-{} is {}", this
+            this.log.info("Metric for link between {}-{},{}-{} is {}", this
                     .getSrcSwitch().getSwitchName(), this.srcPort
                     .getPortNumber(), this.getDstSwitch().getSwitchName(),
                     this.dstPort.getPortNumber(), 100000 / this.srcPort
-                            .getCurrentThroughput());
-            return 100000 / this.srcPort.getCurrentThroughput();
+                            .getCurrentThroughput() + count);
+            return 100000 / this.srcPort.getCurrentThroughput() + count;
         } else {
             this.log.warn(
                     "getMetric: ports have different throughput. Source: {}-{} = {}, Destination: {}-{} = {}",
@@ -189,6 +190,20 @@ public abstract class Link<T1 extends Port, T2 extends Switch> implements
                     this.dstPort.getCurrentThroughput());
             return 1000;
         }
+    }
+    
+    public void increaseLinkCount() {
+    	count = (count + 1);
+    	count = count % Integer.MAX_VALUE;
+    }
+    
+    public void decreaseLinkCount() {
+    	count = (count - 1);
+    	count = count % Integer.MAX_VALUE;
+    }
+    
+    public int getLinkCount() {
+    	return count;
     }
 
     @Override

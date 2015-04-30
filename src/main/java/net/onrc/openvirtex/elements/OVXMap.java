@@ -35,6 +35,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
+import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
@@ -700,6 +701,18 @@ public final class OVXMap implements Mappable {
         for (PhysicalLink l : plist) {
             removeRoute(l, tid, route);
         }
+        
+        ArrayList<PhysicalLink> plinks = this.routetoPhyLinkMap.get(route);
+        for (final PhysicalLink edge : plinks) {
+			PhysicalLink plink = PhysicalNetwork.getInstance().getLink(
+					edge.getSrcPort(), edge.getDstPort());
+			if (plink != null) {
+				plink.decreaseLinkCount();
+				log.info("decrease edge {}, count {}", plink,
+						plink.getLinkCount());
+			}
+		}
+        
         this.routetoPhyLinkMap.remove(route);
 //        DBManager.getInstance().remove(route);
         DBManager.getInstance().removeSwitchPath(tid, route.getSwitchId());
