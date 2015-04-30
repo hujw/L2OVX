@@ -106,10 +106,11 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		}
 		
 		if (this.tenantId == null) {
-			this.log.warn(
-					"PacketIn with {} does not belong to any virtual network; "
-							+ "dropping and installing a temporary drop rule",
-							match);
+//			this.log.warn(
+//					"PacketIn with {} does not belong to any virtual network; "
+//							+ "dropping and installing a temporary drop rule",
+//							match);
+			
 //			this.installDropRule(sw, match);
 			return;
 		}
@@ -148,6 +149,20 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 			this.ovxPort = this.port.getOVXPort(this.tenantId, 0);
 			if (match.getDataLayerType() != Ethernet.TYPE_LLDP){
+				// hujw 
+				// Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
+		        // if you do not consider vlan, then you just remove any vlan fields (e.g., 
+		        // vlan and vlan_pcp) when creating the match.
+		        // So, we only separate this situation by watching the vlan tag in the match.
+		        // If it is the value 0xffff in the vlan field of match, we will see all 12-tuples field 
+				// except vlan and vlan_pcp. 
+				if (match.getDataLayerVirtualLan() == net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
+					match = match.setWildcards(Wildcards.FULL
+		        			.matchOn(Flag.IN_PORT)
+		        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST).matchOn(Flag.DL_TYPE)
+		        			.matchOn(Flag.NW_SRC).matchOn(Flag.NW_DST).matchOn(Flag.NW_PROTO).matchOn(Flag.NW_TOS)
+		        			.matchOn(Flag.TP_SRC).matchOn(Flag.TP_DST));
+		        }
 				this.log.info(
 						"Edge PacketIn {} will be sent to virtual network {}",
 						match, this.tenantId);

@@ -80,13 +80,29 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
             bufferId = sw.getFromBufferMap(this.bufferId).getBufferId();
         }
         final short inport = this.getMatch().getInputPort();
-
-//        if (this.match.getDataLayerType() == Ethernet.TYPE_ARP) {
+        
+//        this.match = this.match.setWildcards(Wildcards.FULL
+//        		.matchOn(Flag.IN_PORT)
+//        		.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+//        		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+        
+        // hujw 
+        // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
+        // if you do not consider vlan, then you just remove any vlan fields (e.g., 
+        // vlan and vlan_pcp) when creating the match.
+        // So, we only separate this situation by watching the vlan tag in the match.
+        // If it is a value 0xffff, we only see the in_port field. 
+        if (this.match.getDataLayerVirtualLan() != net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
         	this.match = this.match.setWildcards(Wildcards.FULL
-        			.matchOn(Flag.IN_PORT)//.matchOn(Flag.DL_TYPE)
-        			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
-//        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-//    	}
+        			.matchOn(Flag.IN_PORT)
+        			.matchOn(Flag.DL_TYPE)
+        			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+        }  else {
+        
+        	this.match = this.match.setWildcards(Wildcards.FULL
+        			.matchOn(Flag.IN_PORT));
+    	}
         
         if (this.match.getDataLayerType() == Ethernet.TYPE_IPV4) {
         	this.log.info("@@@@@[IPv4: {}]@@@@", this.match);
@@ -131,7 +147,8 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         this.setBufferId(bufferId);
 
         if (ovxInPort == null) {
-            if (this.match.getWildcardObj().isWildcarded(Flag.IN_PORT)) {
+        	// for cbench (must restore back!!)
+//            if (this.match.getWildcardObj().isWildcarded(Flag.IN_PORT)) {
                 /* expand match to all ports */
                 for (OVXPort iport : sw.getPorts().values()) {
                     int wcard = this.match.getWildcards()
@@ -139,14 +156,14 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
                     this.match.setWildcards(wcard);
                     prepAndSendSouth(iport, pflag);
                 }
-            } else {
-                this.log.error(
-                        "Unknown virtual port id {}; dropping flowmod {}",
-                        inport, this);
-                sw.sendMsg(OVXMessageUtil.makeErrorMsg(
-                        OFFlowModFailedCode.OFPFMFC_EPERM, this), sw);
-                return;
-            }
+//            } else {
+//                this.log.error(
+//                        "Unknown virtual port id {}; dropping flowmod {}",
+//                        inport, this);
+//                sw.sendMsg(OVXMessageUtil.makeErrorMsg(
+//                        OFFlowModFailedCode.OFPFMFC_EPERM, this), sw);
+//                return;
+//            }
         } else {
             prepAndSendSouth(ovxInPort, pflag);
         }
