@@ -239,9 +239,10 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
     @Override
     public String toString() {
         return "routeId: " + this.routeId + " dpid: " + this.getSwitchId()
-                + " inPort: " + this.srcPort == null ? "" : this.srcPort
-                .toString() + " outPort: " + this.dstPort == null ? ""
-                : this.dstPort.toString();
+                + " inPort: " + 
+        		this.srcPort == null ? "" : this.srcPort.getPhysicalPortNumber().toString() 
+        		+ " outPort: " + 
+                this.dstPort == null ? "" : this.dstPort.getPhysicalPortNumber().toString();
     }
 
     @Override
@@ -322,7 +323,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
             }
         }
         log.info(
-                "Virtual network {}, switch {}, route {} between ports {}-{}: {} flow-mod switched to the new path",
+                "Virtual network {}, switch {}, route {} between ports src:{} - dst:{} flow-mod switched to the new path",
                 this.getTenantId(), this.getSrcPort().getParentSwitch()
                         .getSwitchName(), this.getRouteId(), this.getSrcPort()
                         .getPortNumber(), this.getDstPort().getPortNumber());
