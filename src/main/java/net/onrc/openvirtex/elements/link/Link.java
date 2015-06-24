@@ -171,34 +171,36 @@ public abstract class Link<T1 extends Port, T2 extends Switch> implements
      * @return the link metric
      */
     public Integer getMetric() {
-        if (this.srcPort.getCurrentThroughput().equals(
-                this.dstPort.getCurrentThroughput())) {
-            // Throughput is expressed in Mbps.
-            this.log.info("Metric for link between {}-{},{}-{} is {}", this
-                    .getSrcSwitch().getSwitchName(), this.srcPort
-                    .getPortNumber(), this.getDstSwitch().getSwitchName(),
-                    this.dstPort.getPortNumber(), 100000 / this.srcPort
-                            .getCurrentThroughput() + count);
-            return 100000 / this.srcPort.getCurrentThroughput() + count;
-        } else {
-            this.log.warn(
-                    "getMetric: ports have different throughput. Source: {}-{} = {}, Destination: {}-{} = {}",
-                    this.getSrcSwitch().getSwitchName(), this.srcPort
-                            .getPortNumber(), this.srcPort
-                            .getCurrentThroughput(), this.getDstSwitch()
-                            .getSwitchName(), this.dstPort.getPortNumber(),
-                    this.dstPort.getCurrentThroughput());
-            return 1000;
-        }
+    	// hujw
+    	return 200 + count;
+//        if (this.srcPort.getCurrentThroughput().equals(
+//                this.dstPort.getCurrentThroughput())) {
+//            // Throughput is expressed in Mbps.
+//            this.log.info("Metric for link between {}-{},{}-{} is {}", this
+//                    .getSrcSwitch().getSwitchName(), this.srcPort
+//                    .getPortNumber(), this.getDstSwitch().getSwitchName(),
+//                    this.dstPort.getPortNumber(), 100000 / this.srcPort
+//                            .getCurrentThroughput() + count);
+//            return 100000 / this.srcPort.getCurrentThroughput() + count;
+//        } else {
+//            this.log.warn(
+//                    "getMetric: ports have different throughput. Source: {}-{} = {}, Destination: {}-{} = {}",
+//                    this.getSrcSwitch().getSwitchName(), this.srcPort
+//                            .getPortNumber(), this.srcPort
+//                            .getCurrentThroughput() + count, this.getDstSwitch()
+//                            .getSwitchName(), this.dstPort.getPortNumber(),
+//                    this.dstPort.getCurrentThroughput() + count);
+//            return 1000 + count;
+//        }
     }
     
     public void increaseLinkCount() {
-    	count = (count + 1);
+    	count = (count + 500);
     	count = count % Integer.MAX_VALUE;
     }
     
     public void decreaseLinkCount() {
-    	count = (count - 1);
+    	count = (count - 500);
     	count = count % Integer.MAX_VALUE;
     }
     
