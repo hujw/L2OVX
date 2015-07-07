@@ -15,6 +15,7 @@
  ******************************************************************************/
 package net.onrc.openvirtex.elements.datapath;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -28,16 +29,19 @@ import net.onrc.openvirtex.exceptions.SwitchMappingException;
 import net.onrc.openvirtex.messages.OVXFlowMod;
 import net.onrc.openvirtex.messages.OVXStatisticsReply;
 import net.onrc.openvirtex.messages.Virtualizable;
+import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
 import net.onrc.openvirtex.messages.statistics.OVXFlowStatisticsReply;
 import net.onrc.openvirtex.messages.statistics.OVXPortStatisticsReply;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.jboss.netty.channel.Channel;
+import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPhysicalPort;
 import org.openflow.protocol.OFPort;
 import org.openflow.protocol.OFVendor;
+import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.statistics.OFStatistics;
 
 /**
@@ -276,14 +280,36 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
 
     public void setFlowStatistics(
             Map<Integer, List<OVXFlowStatisticsReply>> stats) {
+    	PhysicalSwitch.log.info("sw {}, stats {}", this.switchName, stats);
         this.flowStats.set(stats);
 
     }
 
     public List<OVXFlowStatisticsReply> getFlowStats(int tid) {
         Map<Integer, List<OVXFlowStatisticsReply>> stats = this.flowStats.get();
-        if (stats != null && stats.containsKey(tid)) {
-            return Collections.unmodifiableList(stats.get(tid));
+        if (stats != null) {
+        	if (stats.containsKey(tid)) return Collections.unmodifiableList(stats.get(tid));
+        	else {
+        		List<OVXFlowStatisticsReply> list = new ArrayList<OVXFlowStatisticsReply>();
+        		for (Integer key : stats.keySet()) {
+        			List<OVXFlowStatisticsReply> l = stats.get(key);
+        			for (OVXFlowStatisticsReply osr : l) {
+        				if ((osr.getMatch().getDataLayerVirtualLan() == tid)){
+        					list.add(osr);
+        				}
+        				
+        				List<OFAction> act = osr.getActions();
+    					for (OFAction a : act) {
+    						if (a instanceof OVXActionVirtualLanIdentifier) {
+    							if (((OVXActionVirtualLanIdentifier) a).getVirtualLanIdentifier() == tid) 
+    								list.add(osr);
+    						}
+    					}
+        			}
+        		}
+        		
+        		return list;
+        	}
         }
         return null;
     }
@@ -324,6 +350,14 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
         dFm.setCommand(OVXFlowMod.OFPFC_DELETE_STRICT);
         dFm.setMatch(reply.getMatch());
         dFm.setOutPort(port);
+        dFm.setLengthU(OVXFlowMod.MINIMUM_LENGTH);
+        this.sendMsg(dFm, this);
+    }
+    
+    public void sendDeleteFlowMod(OVXFlowStatisticsReply reply) {
+        OVXFlowMod dFm = new OVXFlowMod();
+        dFm.setCommand(OVXFlowMod.OFPFC_DELETE);
+        dFm.setMatch(reply.getMatch());
         dFm.setLengthU(OVXFlowMod.MINIMUM_LENGTH);
         this.sendMsg(dFm, this);
     }
