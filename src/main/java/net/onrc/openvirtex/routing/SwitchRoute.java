@@ -59,6 +59,8 @@ import org.apache.logging.log4j.Logger;
 import org.openflow.protocol.OFFlowMod;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.OFPort;
+import org.openflow.protocol.Wildcards;
+import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
 import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.protocol.action.OFActionType;
@@ -394,7 +396,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         // modified by hujw
         // We need to rewrite the vlan field in match by tenantId.
         if (linkField == OVXLinkField.VLAN) {
-        	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());
+        	fm.getMatch().setDataLayerVirtualLan(sw.getTenantId().shortValue());  	
         	SwitchRoute.log.debug("generateRouteFMs - Set vlan id {} in match field {} on sw {}", 
         			sw.getTenantId().shortValue(), 
         			fm.getMatch(),
@@ -529,7 +531,18 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         }
 
         fm.getMatch().setInputPort(this.getSrcPort().getPhysicalPortNumber());
-
+        
+        // modify by hujw
+        if ((fm.getMatch().getDataLayerVirtualLan() == 
+        		net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED)) {
+        	fm.getMatch().setWildcards(Wildcards.FULL
+        		.matchOn(Flag.IN_PORT)
+        		.matchOn(Flag.DL_TYPE)
+        		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+    	} 
+//        // for fixed flow entry
+//        fm.setIdleTimeout((short)0);
+        
         // add the output action with the physical outPort (srcPort of the
         // route)
         if (this.getSrcPort().getPhysicalPortNumber() != this.getPathSrcPort()

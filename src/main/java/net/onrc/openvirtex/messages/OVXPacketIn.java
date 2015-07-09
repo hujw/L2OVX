@@ -96,8 +96,9 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			
 			if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
         		match = match.setWildcards(Wildcards.FULL
-            			.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
-            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+            			.matchOn(Flag.IN_PORT)
+            			.matchOn(Flag.DL_TYPE)
+//            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
             			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
         	}
 			

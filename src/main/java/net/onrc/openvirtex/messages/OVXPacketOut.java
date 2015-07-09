@@ -51,7 +51,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
     private final Logger log = LogManager.getLogger(OVXPacketOut.class
             .getName());
     private OFMatch match = null;
-    private final List<OFAction> approvedActions = new LinkedList<OFAction>();
+    private List<OFAction> approvedActions = null;
     // hujw
     private final OVXLinkField linkField = OpenVirteXController.getInstance()
             .getOvxLinkField();
@@ -61,6 +61,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 
         final OVXPort inport = sw.getPort(this.getInPort());
         OVXMatch ovxMatch = null;
+        approvedActions = new LinkedList<OFAction>();
 
         if (this.getBufferId() == OVXPacketOut.BUFFER_ID_NONE) {
             if (this.getPacketData().length <= 14) {
@@ -92,11 +93,23 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 //            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
 ////            			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
 ////        	}
-        		
-//            this.match = this.match.setWildcards(Wildcards.FULL
-//            		.matchOn(Flag.IN_PORT)
-//            		.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
-//            		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+        	
+            if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
+            	this.match = this.match.setWildcards(Wildcards.FULL
+                 		.matchOn(Flag.IN_PORT)
+                 		.matchOn(Flag.DL_TYPE)
+                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+            	
+            	this.log.info("####[ARP UNTAGGED={}]####",this.match);
+            } else {
+            	 this.match = this.match.setWildcards(Wildcards.FULL
+                 		.matchOn(Flag.IN_PORT)
+                 		.matchOn(Flag.DL_TYPE)
+                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
+                 		.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+            	 
+            	 this.log.info("####[NOT ARP={}]####",this.match);
+            }
             
             // hujw 
             // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
@@ -113,7 +126,9 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 			} else {
 
 				this.match = this.match.setWildcards(Wildcards.FULL
-						.matchOn(Flag.IN_PORT));
+						.matchOn(Flag.IN_PORT)
+						.matchOn(Flag.DL_TYPE)
+						.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
 			}
             
             this.setBufferId(cause.getBufferId());
