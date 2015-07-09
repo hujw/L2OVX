@@ -52,13 +52,14 @@ public class RemoveOVXNetwork extends ApiHandler<Map<String, Object>> {
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
 
-
             if (virtualNetwork == null) {
                 resp = new JSONRPC2Response(
                         new JSONRPC2Error(
                                 JSONRPC2Error.INTERNAL_ERROR.getCode(),
                                 this.cmdName()), 0);
             } else {
+            	 RemoveFlows rf = new RemoveFlows();
+                 rf.process(params);
                 virtualNetwork.unregister();
                 this.log.info("Removed virtual network {}", tenantId);
                 resp = new JSONRPC2Response(0);
