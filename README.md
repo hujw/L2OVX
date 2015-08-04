@@ -1,7 +1,7 @@
-# OVX
+# L2OVX
 ===
 
-## OVX with VLAN
+## An modification of OVX with VLAN
 
 Currently, OVX uses replacing IP and MAC to identify different tenants. In our environment, we need a service such as VPLS/L2VPN. So we modify the current OVX to let it can support separating tenants by VLANs.
 
