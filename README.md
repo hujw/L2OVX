@@ -29,11 +29,11 @@ $ python ovxctl.py -n createPort 1 00:00:00:00:00:00:06:00 2
 
 $ python ovxctl.py -n createPort 1 00:00:00:00:00:00:0A:00 3
 
-$ python ovxctl.py -n connectHost 1 00:a4:23:05:00:00:00:01 1 00:00:00:00:05:01
+$ python ovxctl.py -n startPort 1 00:a4:23:05:00:00:00:01 1
 
-$ python ovxctl.py -n connectHost 1 00:a4:23:05:00:00:00:01 2 00:00:00:00:06:02
+$ python ovxctl.py -n startPort 1 00:a4:23:05:00:00:00:01 2
 
-$ python ovxctl.py -n connectHost 1 00:a4:23:05:00:00:00:01 3 00:00:00:00:0A:03
+$ python ovxctl.py -n startPort 1 00:a4:23:05:00:00:00:01 3
 
 $ python ovxctl.py -n startNetwork 1
 
