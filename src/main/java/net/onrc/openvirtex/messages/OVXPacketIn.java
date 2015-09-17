@@ -170,7 +170,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			}
 			this.sendPkt(vSwitch, match, sw);
 			long totTime = System.nanoTime() - startTime;
-			this.log.info("### Edge PacketIn executing time {} ###", totTime);
+			this.log.debug("### Edge PacketIn executing time {} ###", totTime);
 			if (!(linkField == OVXLinkField.VLAN)) {
 				this.learnHostIP(match, map);
 			}
