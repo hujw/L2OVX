@@ -93,23 +93,26 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 //            			.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
 ////            			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
 ////        	}
-        	
-            if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
-            	this.match = this.match.setWildcards(Wildcards.FULL
-                 		.matchOn(Flag.IN_PORT)
-                 		.matchOn(Flag.DL_TYPE)
-                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-            	
-            	this.log.info("####[ARP UNTAGGED={}]####",this.match);
-            } else {
-            	 this.match = this.match.setWildcards(Wildcards.FULL
-                 		.matchOn(Flag.IN_PORT)
-                 		.matchOn(Flag.DL_TYPE)
-                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
-                 		.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
-            	 
-            	 this.log.info("####[NOT ARP={}]####",this.match);
-            }
+
+            
+//            
+//            
+//            if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
+//            	this.match = this.match.setWildcards(Wildcards.FULL
+//                 		.matchOn(Flag.IN_PORT)
+//                 		.matchOn(Flag.DL_TYPE)
+//                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+//            	
+//            	this.log.info("####[ARP UNTAGGED={}]####",this.match);
+//            } else {
+//            	 this.match = this.match.setWildcards(Wildcards.FULL
+//                 		.matchOn(Flag.IN_PORT)
+//                 		.matchOn(Flag.DL_TYPE)
+//                 		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
+//                 		.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+//            	 
+//            	 this.log.info("####[NOT ARP={}]####",this.match);
+//            }
             
             // hujw 
             // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
