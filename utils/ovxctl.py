@@ -269,6 +269,20 @@ def do_removePort(gopts, opts, args):
     result = connect(gopts, "tenant", "removePort", data=req, passwd=getPasswd(gopts)) 
     print "Port (port_id %s) has been removed from virtual switch (switch_id %s)" % (args[2], args[1]) 
 
+def pa_removeFlows(args, cmd):
+    usage = "%s <tenant_id>" % USAGE.format(cmd)
+    (sdesc, ldesc) = DESCS[cmd]
+    parser = OptionParser(usage=usage, description=ldesc)
+    return parser.parse_args(args)    
+
+def do_removeFlows(gopts, opts, args):
+    if len(args) != 1:
+        print "removeFlows : Must specify a virtual tenant_id"
+        sys.exit()
+    req = { "tenantId" : int(args[0]) }
+    result = connect(gopts, "tenant", "removeFlows", data=req, passwd=getPasswd(gopts)) 
+    print "All flows of (tenant_id %s) has been removed" % (args[0])   
+
 def pa_disconnectHost(args, cmd):
     usage = "%s <tenant_id> <host_id>" % USAGE.format(cmd)
     (sdesc, ldesc) = DESCS[cmd]
@@ -646,6 +660,7 @@ CMDS = {
     'removeNetwork': (pa_removeNetwork, do_removeNetwork),
     'removeSwitch': (pa_removeSwitch, do_removeSwitch),
     'removePort': (pa_removePort, do_removePort),
+    'removeFlows': (pa_removeFlows, do_removeFlows),
     'disconnectHost': (pa_disconnectHost, do_disconnectHost),
     'disconnectLink': (pa_disconnectLink, do_disconnectLink),
     'disconnectRoute': (pa_disconnectRoute, do_disconnectRoute),
@@ -715,6 +730,9 @@ DESCS = {
     'removePort' : ("Remove virtual port",
                      ("Remove a virtual port. Must specify a tenant_id, a virtual switch_id and a virtual port_id."
                         "\nExample: removePort 1 00:a4:23:05:00:00:00:01 1")),
+    'removeFlows' : ("Remove all flows belong to the tenant",
+                     ("Remove all flows. Must specify a tenant_id."
+                        "\nExample: removeFlows 1")),
     'disconnectHost' : ("Disconnect host from a virtual port",
                      ("Disconnect host from a virtual port. Must specify a tenant_id and the host_id."
                         "\nExample: disconnectHost 1 1")),
