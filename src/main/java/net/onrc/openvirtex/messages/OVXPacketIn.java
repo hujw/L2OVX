@@ -157,13 +157,13 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		        // So, we only separate this situation by watching the vlan tag in the match.
 		        // If it is the value 0xffff in the vlan field of match, we will see all 12-tuples field 
 				// except vlan and vlan_pcp. 
-				if (match.getDataLayerVirtualLan() == net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
-					match = match.setWildcards(Wildcards.FULL
-		        			.matchOn(Flag.IN_PORT)
-		        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST).matchOn(Flag.DL_TYPE)
-		        			.matchOn(Flag.NW_SRC).matchOn(Flag.NW_DST).matchOn(Flag.NW_PROTO).matchOn(Flag.NW_TOS)
-		        			.matchOn(Flag.TP_SRC).matchOn(Flag.TP_DST));
-		        }
+//				if (match.getDataLayerVirtualLan() == net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
+//					match = match.setWildcards(Wildcards.FULL
+//		        			.matchOn(Flag.IN_PORT)
+//		        			.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST).matchOn(Flag.DL_TYPE)
+//		        			.matchOn(Flag.NW_SRC).matchOn(Flag.NW_DST).matchOn(Flag.NW_PROTO).matchOn(Flag.NW_TOS)
+//		        			.matchOn(Flag.TP_SRC).matchOn(Flag.TP_DST));
+//		        }
 				this.log.info(
 						"Edge PacketIn {} will be sent to virtual network {}",
 						match, this.tenantId);
@@ -392,11 +392,13 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 	}
 
 	private void installDropRule(final PhysicalSwitch sw, final OFMatch match) {
-		final OVXFlowMod fm = new OVXFlowMod();
-		fm.setMatch(match);
-		fm.setBufferId(this.getBufferId());
-		fm.setHardTimeout((short) 1);
-		sw.sendMsg(fm, sw);
+		// For Brocade sw, we must comment this because they do not support timeout now.
+		// So, we do nothing instead of trying to install the drop rule.
+//		final OVXFlowMod fm = new OVXFlowMod();
+//		fm.setMatch(match);
+//		fm.setBufferId(this.getBufferId());
+//		fm.setHardTimeout((short) 1);
+//		sw.sendMsg(fm, sw);
 	}
 
 	private Integer fetchTenantId(final OFMatch match, final Mappable map,
