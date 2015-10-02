@@ -280,7 +280,7 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
 
     public void setFlowStatistics(
             Map<Integer, List<OVXFlowStatisticsReply>> stats) {
-    	PhysicalSwitch.log.info("sw {}, stats {}", this.switchName, stats);
+    	PhysicalSwitch.log.debug("sw {}, stats {}", this.switchName, stats);
         this.flowStats.set(stats);
 
     }

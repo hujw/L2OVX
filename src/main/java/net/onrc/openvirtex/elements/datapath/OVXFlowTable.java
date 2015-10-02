@@ -220,7 +220,7 @@ public class OVXFlowTable implements FlowTable {
             /* replace table entry that strictly matches with given FlowMod. */
             if (res == OVXFlowEntry.EQUAL) {
                 long c = fmod.getKey();
-                log.info("replacing equivalent FlowEntry [cookie={}]", c);
+                log.info("replacing equivalent FlowEntry [cookie={}, OFMatch={}]", c, fm.getMatch());
                 OVXFlowMod old = this.flowmodMap.get(c);
                 this.cookieMap.remove(old.hashCode());
                 this.addFlowMod(fm, c);
@@ -231,6 +231,7 @@ public class OVXFlowTable implements FlowTable {
         /* make a new cookie, add FlowMod */
         long newc = this.getCookie();
         this.addFlowMod(fm.clone(), newc);
+        log.info("Create *new* FlowEntry [cookie={}, OFMatch={}]", newc, fm.getMatch());
         return true;
     }
 

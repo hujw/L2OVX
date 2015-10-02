@@ -108,7 +108,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         // attach tenantId as the vlan field of ovxMatch
         if (linkField == OVXLinkField.VLAN) {
         	ovxMatch.setDataLayerVirtualLan(sw.getTenantId().shortValue());
-        	this.log.info("Set vlan id {} in match field on sw {}", 
+        	this.log.debug("Set vlan id {} in match field on sw {}", 
         			sw.getTenantId().shortValue(), sw.getName());
         }
         
@@ -197,8 +197,9 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         try {
             if (inPort.isEdge()) {
                 this.prependRewriteActions();
-                log.info("@@@@@ {} on sw {} is an edge port with {} and actions {}", 
-            			inPort.getPortNumber(), inPort.getParentSwitch().getName(), 
+                log.info("@@@@@ port={} on sw {} is an edge port with {} and actions {}", 
+            			inPort.getPhysicalPortNumber(), 
+            			inPort.getPhysicalPort().getParentSwitch().getName(), 
             			this.getMatch(),
             			this.approvedActions);
             } else {
