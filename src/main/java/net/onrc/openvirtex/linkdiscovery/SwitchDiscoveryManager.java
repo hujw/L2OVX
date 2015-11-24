@@ -363,6 +363,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             final DPIDandPort dp = OVXLLDP.parseLLDP(pkt);
             final PhysicalSwitch srcSwitch = PhysicalNetwork.getInstance()
                     .getSwitch(dp.getDpid());
+            if (srcSwitch == null) return;
             final PhysicalPort srcPort = srcSwitch.getPort(dp.getPort());
 
             PhysicalNetwork.getInstance().createLink(srcPort, dstPort);
