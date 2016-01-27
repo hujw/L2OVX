@@ -40,6 +40,7 @@ import net.onrc.openvirtex.exceptions.DuplicateIndexException;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
+import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.routing.SwitchRoute;
 import net.onrc.openvirtex.util.MACAddress;
 import net.onrc.openvirtex.messages.OVXPortStatus;
@@ -52,9 +53,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     private final Integer tenantId;
     private final PhysicalPort physicalPort;
     private boolean isActive;
+    private short tag = Ethernet.VLAN_UNTAGGED;
 
     public OVXPort(final int tenantId, final PhysicalPort port,
-            final boolean isEdge, final short portNumber)
+            final boolean isEdge, short tag, final short portNumber)
                     throws IndexOutOfBoundException, DuplicateIndexException {
         super(port);
         this.tenantId = tenantId;
@@ -74,7 +76,8 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         else
         	this.portNumber = this.parentSwitch.getNextPortNumber(portNumber);
         
-//        this.portNumber = portNumber;
+        if ((tag > 0 && tag < 4095) || (tag == Ethernet.VLAN_UNTAGGED))
+        	this.tag = tag;
         this.name = "ovxport-" + this.portNumber;
         this.isEdge = isEdge;
         this.hardwareAddress = port.getHardwareAddress();
@@ -94,9 +97,9 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     }
 
     public OVXPort(final int tenantId, final PhysicalPort port,
-            final boolean isEdge) 
+    		final boolean isEdge, short tag) 
             		throws IndexOutOfBoundException, DuplicateIndexException {
-        this(tenantId, port, isEdge, (short) 0);
+        this(tenantId, port, isEdge, tag, (short) 0);
 //        this.portNumber = this.parentSwitch.getNextPortNumber();
 //        this.name = "ovxport-" + this.portNumber;
     }
@@ -140,10 +143,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
 		}
 		// bind the edge PhysicalPort and tenantId
 		boolean isExist = OVXMap.getInstance().
-				getTenantId(this.physicalPort) == null ? false : true;
+				getTenantId(this.physicalPort, this.tag) == null ? false : true;
 		if (this.physicalPort.isEdge() && !isExist) {
 			OVXMap.getInstance().bindPhysicalPort(
-					this.physicalPort, this.tenantId);
+					this.physicalPort, this.tag, this.tenantId);
         }
 		DBManager.getInstance().save(this);
     }
@@ -264,6 +267,7 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         Map<String, Object> dbObject = new HashMap<String, Object>();
         dbObject.putAll(this.getPhysicalPort().getDBObject());
         dbObject.put(TenantHandler.VPORT, this.portNumber);
+        dbObject.put(TenantHandler.PORT_TAG, this.tag);
         return dbObject;
     }
 
@@ -290,10 +294,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         // release the information between the edge PhysicalPort 
         // and the tenant
         boolean isExist = OVXMap.getInstance().getTenantId(
-        		this.physicalPort) == null ? false : true;
+        		this.physicalPort, this.tag) == null ? false : true;
         if (isExist) {
         	OVXMap.getInstance().releasePhysicalPort(
-        			this.physicalPort, this.tenantId);
+        			this.physicalPort, this.tag, this.tenantId);
         }
     }
 

@@ -358,7 +358,7 @@ public interface Mappable {
      * @param tenantId the tenant ID.
      */
 //    public void bindPhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
-    public void bindPhysicalPort(PhysicalPort port, Integer tenantId);
+    public void bindPhysicalPort(PhysicalPort port, Short tag, Integer tenantId);
     
     /**
      * Gets the tenant ID associated with the given PhysicalSwitch and PhysicalPort.
@@ -368,7 +368,7 @@ public interface Mappable {
      * @return tenant ID associated with the given physical DPID and physical port number
      */
 //    public Integer getTenantId(long physicalDpid, short portNumber);
-    public Integer getTenantId(PhysicalPort port);
+    public Integer getTenantId(PhysicalPort port, Short tag);
     
     /**
      * Removes the MAC address from the map.
@@ -378,7 +378,9 @@ public interface Mappable {
     * @param tenantId the tenant ID
     */
 //    public void releasePhysicalPort(long physicalDpid, short portNumber, Integer tenantId);
-    public void releasePhysicalPort(PhysicalPort port, Integer tenantId);
+    public void releasePhysicalPort(PhysicalPort port, Short tag, Integer tenantId);
 
     public ArrayList<PhysicalPort> getPhysicalPorts(Integer tenantId);
+    
+    public Map<PhysicalPort, Short> getPortTagPair(Integer tenantId);
 }

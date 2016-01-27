@@ -363,6 +363,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             final DPIDandPort dp = OVXLLDP.parseLLDP(pkt);
             final PhysicalSwitch srcSwitch = PhysicalNetwork.getInstance()
                     .getSwitch(dp.getDpid());
+            if (srcSwitch == null) return;
             final PhysicalPort srcPort = srcSwitch.getPort(dp.getPort());
 
             PhysicalNetwork.getInstance().createLink(srcPort, dstPort);
@@ -425,32 +426,36 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             this.log.warn("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
             		HexString.toHexString(dstPort.getParentSwitch().getSwitchId()), 
             		pi.getInPort(), chassisId, portNum);
-            
-            final Mappable map = OVXMap.getInstance();
-            
-            Integer tenantId = map.getTenantId(dstPort);
-            if (tenantId != null) {
-            	ArrayList<PhysicalPort> ports = map.getPhysicalPorts(tenantId);
-            	if (ports.contains(dstPort))
-            		ports.remove(dstPort);
-            	
-            	for (int i=0; i<ports.size(); i++) {
-            		try {
-            			final SwitchDiscoveryManager sdm = PhysicalNetwork.getInstance()
-                    			.getDiscoveryManager(ports.get(i)
-                                .getParentSwitch().getSwitchId());
-            			
-            			sdm.forwardLLDPPacketOut(ports.get(i), eth);
-						this.log.warn("Forwarding LLDP generated from {} to {}/{}", 
-								eth.getSourceMAC(), 
-								ports.get(i).getParentSwitch().getName(), 
-								ports.get(i).getPortNumber());
-					} catch (PortMappingException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-            	}
-            }
+
+            // Currently, we comment it before finishing to develop the version which supports
+            // edge side could be tagged vlan id.
+            // This purpose is for the topology of tenants can be showed correctly in their
+            // controllers.  
+//            final Mappable map = OVXMap.getInstance();
+//            
+//            Integer tenantId = map.getTenantId(dstPort);
+//            if (tenantId != null) {
+//            	ArrayList<PhysicalPort> ports = map.getPhysicalPorts(tenantId);
+//            	if (ports.contains(dstPort))
+//            		ports.remove(dstPort);
+//            	
+//            	for (int i=0; i<ports.size(); i++) {
+//            		try {
+//            			final SwitchDiscoveryManager sdm = PhysicalNetwork.getInstance()
+//                    			.getDiscoveryManager(ports.get(i)
+//                                .getParentSwitch().getSwitchId());
+//            			
+//            			sdm.forwardLLDPPacketOut(ports.get(i), eth);
+//						this.log.warn("Forwarding LLDP generated from {} to {}/{}", 
+//								eth.getSourceMAC(), 
+//								ports.get(i).getParentSwitch().getName(), 
+//								ports.get(i).getPortNumber());
+//					} catch (PortMappingException e) {
+//						// TODO Auto-generated catch block
+//						e.printStackTrace();
+//					}
+//            	}
+//            }
             
         }
     }

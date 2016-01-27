@@ -72,7 +72,7 @@ public final class OVXMap implements Mappable {
     private RadixTree<OVXIPAddress> physicalIPMap;
     private RadixTree<ConcurrentHashMap<Integer, PhysicalIPAddress>> virtualIPMap;
     private RadixTree<Integer> macMap;
-    private ConcurrentHashMap<PhysicalPort, Integer> physicalPortMap;
+    private ConcurrentHashMap<Integer, ConcurrentHashMap<PhysicalPort, Short>> physicalPortMap;
 
     /**
      * Creates a new map instance, by initializing all mapping data structures.
@@ -91,7 +91,7 @@ public final class OVXMap implements Mappable {
                 new DefaultCharArrayNodeFactory());
         this.macMap = new ConcurrentRadixTree<Integer>(
                 new DefaultCharArrayNodeFactory());
-        this.physicalPortMap = new ConcurrentHashMap<PhysicalPort, Integer>();
+        this.physicalPortMap = new ConcurrentHashMap<Integer, ConcurrentHashMap<PhysicalPort, Short>>();
     } 
 
     /**
@@ -852,32 +852,63 @@ public final class OVXMap implements Mappable {
     }
 
 	@Override
-	public void bindPhysicalPort(PhysicalPort port, Integer tenantId) {
-		if (!physicalPortMap.contains(port)) 
-			this.physicalPortMap.put(port, tenantId);
+	public void bindPhysicalPort(PhysicalPort port, Short tag, Integer tenantId) {
+		ConcurrentHashMap<PhysicalPort, Short> portMap = 
+				this.physicalPortMap.get(tenantId);
+        if (portMap == null) {
+        	portMap = new ConcurrentHashMap<PhysicalPort, Short>();
+            this.physicalPortMap.put(tenantId, portMap);
+        }
+        portMap.put(port, tag);
 	}
 
 	@Override
-	public Integer getTenantId(PhysicalPort port) {
-		return this.physicalPortMap.get(port);
+	public Integer getTenantId(PhysicalPort port, Short tag) {
+		Iterator<Integer> it = physicalPortMap.keySet().iterator();
+		Integer tenantId; 
+		
+		while (it.hasNext()) {
+			tenantId = it.next();
+			ConcurrentHashMap<PhysicalPort, Short> portMap = physicalPortMap.get(tenantId);
+			Short t = portMap.get(port);
+			if (t != null) {
+				if (tag == t) return tenantId;
+			}
+		}
+		return null;
 	}
 
 	@Override
-	public void releasePhysicalPort(PhysicalPort port, Integer tenantId) {
-		this.physicalPortMap.remove(port);
+	public void releasePhysicalPort(PhysicalPort port, Short tag, Integer tenantId) {
+		ConcurrentHashMap<PhysicalPort, Short> portMap = 
+				this.physicalPortMap.get(tenantId);
+		if (portMap != null) {
+			Short t = portMap.get(port);
+			if (t != null) {
+				if (tag == t) portMap.remove(port);
+			}
+		}
 	}
 	
 	@Override
 	public ArrayList<PhysicalPort> getPhysicalPorts(Integer tenantId) {
 		ArrayList<PhysicalPort> ports = new ArrayList<PhysicalPort>();
+		ConcurrentHashMap<PhysicalPort, Short> portMap = 
+				this.physicalPortMap.get(tenantId);
 		
-		Iterator<PhysicalPort> it = this.physicalPortMap.keySet().iterator();
+		Iterator<PhysicalPort> it = portMap.keySet().iterator();
 		while (it.hasNext()) {
 			PhysicalPort p = it.next();
-			if (this.physicalPortMap.get(p).equals(tenantId))
-				ports.add(p);
+			ports.add(p);
 		}
 		return ports;
+	}
+	
+	@Override
+	 public Map<PhysicalPort, Short> getPortTagPair(Integer tenantId) {
+		ConcurrentHashMap<PhysicalPort, Short> portMap = 
+				this.physicalPortMap.get(tenantId);
+		return portMap;
 	}
 
 }

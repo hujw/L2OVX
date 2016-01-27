@@ -349,7 +349,8 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
          * last FM to rewrite the MACs - generate the route FMs
          */
         if (this.getDstPort().isEdge()) {
-            outActions.addAll(IPMapper.prependUnRewriteActions(sw.getTenantId(), fm.getMatch()));
+            outActions.addAll(IPMapper.prependUnRewriteActions(sw, fm.getMatch(), 
+            		this.getDstPort().getPhysicalPort()));
 //            log.info("This dstPort {} on sw {} is an edge port and with match {} and actions {}", 
 //        			this.getDstPort().getPortNumber(), 
 //        			this.getDstPort().getParentSwitch().getName(),

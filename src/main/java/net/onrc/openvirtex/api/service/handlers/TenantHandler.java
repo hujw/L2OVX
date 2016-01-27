@@ -145,6 +145,10 @@ public class TenantHandler extends AbstractHandler implements RequestHandler {
      * Keyword for the boot state.
      */
     public static final String IS_BOOTED = "isBooted";
+    /**
+     * Keyword for the tag on the port.
+     */
+    public static final String PORT_TAG = "tag";
 
     @SuppressWarnings({ "serial", "rawtypes" })
     private HashMap<String, ApiHandler> handlers = new HashMap<String, ApiHandler>() {

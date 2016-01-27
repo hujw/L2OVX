@@ -17,17 +17,21 @@ package net.onrc.openvirtex.elements.address;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.openflow.protocol.OFMatch;
+import org.openflow.protocol.OFPort;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
 
 import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.Mappable;
 import net.onrc.openvirtex.elements.OVXMap;
+import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.link.OVXLinkField;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.exceptions.AddressMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
@@ -35,6 +39,7 @@ import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerDestination;
 import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerSource;
 import net.onrc.openvirtex.messages.actions.OVXActionStripVirtualLan;
 import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
+import net.onrc.openvirtex.packet.Ethernet;
 
 /**
  * Utility class for IP mapping operations. Implements methods
@@ -122,13 +127,27 @@ public final class IPMapper {
         return actions;
     }
 
-    public static List<OFAction> prependUnRewriteActions(final Integer tenantId, final OFMatch match) {
+    public static List<OFAction> prependUnRewriteActions(final OVXSwitch sw, 
+    		final OFMatch match, PhysicalPort port) {
         final List<OFAction> actions = new LinkedList<OFAction>();
         
         // modify by hujw
         if (linkField == OVXLinkField.VLAN) {
-        	final OVXActionStripVirtualLan vlanAct = new OVXActionStripVirtualLan();
-            actions.add(vlanAct);
+        	// According to the port of the tenant, we assign the
+            // vlan id into the Action list.
+			ConcurrentHashMap<PhysicalPort, Short> pairPortTag = 
+					(ConcurrentHashMap<PhysicalPort, Short>) 
+					sw.getMap().getPortTagPair(sw.getTenantId());
+            Short tag = pairPortTag.get(port);
+            if (tag.shortValue() != Ethernet.VLAN_UNTAGGED) {
+            	OVXActionVirtualLanIdentifier vlanAct = new OVXActionVirtualLanIdentifier();
+            	vlanAct.setVirtualLanIdentifier(tag);
+            	actions.add(vlanAct);
+            } else {
+            	OVXActionStripVirtualLan vlanAct = new OVXActionStripVirtualLan();
+                actions.add(vlanAct);
+            }
+            
         } else if (linkField == OVXLinkField.MAC_ADDRESS) {
             if (!match.getWildcardObj().isWildcarded(Flag.NW_SRC)) {
                 final OVXActionNetworkLayerSource srcAct = new OVXActionNetworkLayerSource();

@@ -92,9 +92,11 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		if (linkField == OVXLinkField.VLAN) {
 //			this.tenantId = map.getTenantId(sw.getSwitchId(),
 //					port.getPortNumber());
-			this.tenantId = map.getTenantId(port);
+			this.tenantId = map.getTenantId(port, match.getDataLayerVirtualLan());
 			
-			if (match.getDataLayerType() == Ethernet.TYPE_ARP) {
+			// The default vlan value of some vendor switches is not -1.
+			// So, we ignore the fields "DL_VLAN" and "DL_VLAN_PCP".
+			if (match.getDataLayerVirtualLan() != Ethernet.VLAN_UNTAGGED) {
         		match = match.setWildcards(Wildcards.FULL
             			.matchOn(Flag.IN_PORT)
             			.matchOn(Flag.DL_TYPE)
@@ -168,6 +170,17 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 						"Edge PacketIn {} will be sent to virtual network {}",
 						match, this.tenantId);
 			}
+			
+			// modify by hujw
+			// untag all packet before sending to corresponding controller. 
+			Ethernet test_eth = new Ethernet();
+			test_eth.deserialize(this.getPacketData(), 0,
+					this.getPacketData().length);
+			
+			test_eth.setVlanID((short)-1).setPriorityCode((byte)0);
+			this.setPacketData(test_eth.serialize());
+			// end
+			
 			this.sendPkt(vSwitch, match, sw);
 			long totTime = System.nanoTime() - startTime;
 			this.log.debug("### Edge PacketIn executing time {} ###", totTime);
@@ -399,6 +412,14 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 //		fm.setBufferId(this.getBufferId());
 //		fm.setHardTimeout((short) 1);
 //		sw.sendMsg(fm, sw);
+	}
+	
+	private void installARPRule(final PhysicalSwitch sw, final OFMatch match) {
+		final OVXFlowMod fm = new OVXFlowMod();
+		fm.setMatch(match);
+		fm.setBufferId(this.getBufferId());
+		fm.setHardTimeout((short) 1);
+		sw.sendMsg(fm, sw);
 	}
 
 	private Integer fetchTenantId(final OFMatch match, final Mappable map,

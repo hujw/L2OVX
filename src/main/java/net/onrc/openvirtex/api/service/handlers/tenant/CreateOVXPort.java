@@ -32,6 +32,7 @@ import net.onrc.openvirtex.exceptions.InvalidTenantIdException;
 import net.onrc.openvirtex.exceptions.MissingRequiredField;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
+import net.onrc.openvirtex.packet.Ethernet;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -55,6 +56,8 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
                     TenantHandler.DPID, params, true, null);
             final Number port = HandlerUtils.<Number>fetchField(
                     TenantHandler.PORT, params, true, null);
+            final Number tag = HandlerUtils.<Number>fetchField(
+                    TenantHandler.PORT_TAG, params, true, Ethernet.VLAN_UNTAGGED);
 
             HandlerUtils.isValidTenantId(tenantId.intValue());
             HandlerUtils.isValidPhysicalPort(tenantId.intValue(),
@@ -65,7 +68,7 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
             final OVXNetwork virtualNetwork = map.getVirtualNetwork(tenantId
                     .intValue());
             final OVXPort ovxPort = virtualNetwork.createPort(dpid.longValue(),
-                    port.shortValue());
+                    port.shortValue(), tag.shortValue());
 
 
             if (ovxPort == null) {

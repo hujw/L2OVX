@@ -18,6 +18,7 @@ package net.onrc.openvirtex.messages.actions;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.elements.address.IPMapper;
 import net.onrc.openvirtex.elements.datapath.OVXBigSwitch;
@@ -35,6 +36,7 @@ import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
 import net.onrc.openvirtex.messages.OVXFlowMod;
 import net.onrc.openvirtex.messages.OVXPacketIn;
 import net.onrc.openvirtex.messages.OVXPacketOut;
+import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.protocol.OVXMatch;
 import net.onrc.openvirtex.routing.SwitchRoute;
 
@@ -146,7 +148,7 @@ public class OVXActionOutput extends OFActionOutput implements
                     if (inPort.getPhysicalPortNumber() != route
                             .getPathSrcPort().getPortNumber()) {
                         approvedActions.add(new OFActionOutput(route
-                                .getPathSrcPort().getPortNumber()));
+                                .getPathSrcPort().getPortNumber()));        
                     } else {
                         approvedActions.add(new OFActionOutput(
                                 OFPort.OFPP_IN_PORT.getValue()));
@@ -163,7 +165,8 @@ public class OVXActionOutput extends OFActionOutput implements
                             // this because we always add the rewriting actions
                             // in the flowMod. Change it.
                             approvedActions.addAll(IPMapper
-                                    .prependUnRewriteActions(sw.getTenantId(), match));
+                                    .prependUnRewriteActions(sw, match, outPort
+                                            .getPhysicalPort()));
                         } else {
                             /*
                              * If inPort is edge and outPort is link: - retrieve
@@ -198,7 +201,8 @@ public class OVXActionOutput extends OFActionOutput implements
                              * to restore packet fields related to the link
                              */
                             approvedActions.addAll(IPMapper
-                                    .prependUnRewriteActions(sw.getTenantId(), match));
+                                    .prependUnRewriteActions(sw, match, outPort
+                                            .getPhysicalPort()));
                             // rewrite the OFMatch with the values of the link
                             final OVXPort dstPort = vnet
                                     .getNeighborPort(inPort);
@@ -294,12 +298,28 @@ public class OVXActionOutput extends OFActionOutput implements
                     if ((inPort == null)
                             || (((OVXBigSwitch) sw).getRoute(inPort, outPort) != null)) {
                         final PhysicalPort dstPort = outPort.getPhysicalPort();
+                        
+                        ConcurrentHashMap<PhysicalPort, Short> pairPortTag = 
+            					(ConcurrentHashMap<PhysicalPort, Short>) 
+            					sw.getMap().getPortTagPair(sw.getTenantId());
+                        Short tag = pairPortTag.get(dstPort);
+                        if (tag.shortValue() != Ethernet.VLAN_UNTAGGED) {
+                    		Ethernet newPkt = new Ethernet();
+                    		newPkt.deserialize(match.getPktData(), 0,
+                    				match.getPktData().length);
+                    		
+                    		newPkt.setVlanID(tag.shortValue()).setPriorityCode((byte)0);
+                    		match.setPktData(newPkt.serialize());
+                    		match.setDataLayerVirtualLan(tag.shortValue());
+                        }
+                        
                         dstPort.getParentSwitch().sendMsg(
                                 new OVXPacketOut(match.getPktData(),
                                         OFPort.OFPP_NONE.getValue(),
                                         dstPort.getPortNumber()), sw);
-                        this.log.debug("PacketOut for a bigSwitch port, "
+                        this.log.debug("PacketOut {} for a bigSwitch port, "
                                 + "generate a packet from Physical Port {}/{}",
+                                match,
                                 dstPort.getParentSwitch().getSwitchName(),
                                 dstPort.getPortNumber());
                     }
@@ -311,7 +331,8 @@ public class OVXActionOutput extends OFActionOutput implements
                      */
                     throwException = false;
                     approvedActions.addAll(IPMapper
-                            .prependUnRewriteActions(sw.getTenantId(), match));
+                            .prependUnRewriteActions(sw, match, outPort
+                                    .getPhysicalPort()));
                     approvedActions.add(new OFActionOutput(outPort
                             .getPhysicalPortNumber()));
                     

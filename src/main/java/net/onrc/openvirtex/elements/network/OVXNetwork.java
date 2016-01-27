@@ -312,29 +312,32 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
      *
      * @param physicalDpid the physical DPID
      * @param portNumber the physical port number
+     * @param tag the vlan id
      * @param vportNumber the virtual port number
      * @return the virtual port instance
      * @throws IndexOutOfBoundException
      */
     public OVXPort createPort(final long physicalDpid, final short portNumber,
-            final short... vportNumber) 
+    		short tag, final short... vportNumber) 
             		throws IndexOutOfBoundException, DuplicateIndexException {
         final PhysicalSwitch physicalSwitch = PhysicalNetwork.getInstance()
                 .getSwitch(physicalDpid);
         final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber); 
-		boolean isExist = OVXMap.getInstance().getTenantId(physicalPort) == null ? false : true;
+		boolean isExist = OVXMap.getInstance()
+				.getTenantId(physicalPort, tag) == null ? false : true;
         if (physicalPort != null && 
         		(linkField == OVXLinkField.VLAN) && 
         		physicalPort.isEdge() && 
         		isExist) {
-        	// This edge PhysicalPort is already used by one tenant.
+        	// This edge PhysicalPort is already used by one tenant with a 
+        	// specific tag.
         	return null;
         } else {
         	final OVXPort ovxPort;
             if (vportNumber.length == 0) {
-                ovxPort = new OVXPort(this.tenantId, physicalPort, true);
+                ovxPort = new OVXPort(this.tenantId, physicalPort, true, tag);
             } else {
-                ovxPort = new OVXPort(this.tenantId, physicalPort, true,
+                ovxPort = new OVXPort(this.tenantId, physicalPort, true, tag,
                         vportNumber[0]);
             }
             ovxPort.register();

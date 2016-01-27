@@ -111,22 +111,6 @@ public class OVXLink extends Link<OVXPort, OVXSwitch> {
             this.alg.getRoutable().setLinkPath(this);
         }
         this.srcPort.getPhysicalPort().removeOVXPort(this.srcPort);
-        // release the information between the edge PhysicalPort 
-        // and the tenant
-        boolean isExist = this.map.getTenantId(
-        		this.srcPort.getPhysicalPort()) == null ? false : true;
-        if (isExist) {
-        	OVXMap.getInstance().releasePhysicalPort(
-        			this.srcPort.getPhysicalPort(), this.tenantId);
-        } 
-        
-        this.srcPort.getPhysicalPort().setOVXPort(this.srcPort);
-		// bind the edge PhysicalPort and tenantId
-		isExist = OVXMap.getInstance().getTenantId(
-				this.srcPort.getPhysicalPort()) == null ? false : true;
-		if (this.srcPort.getPhysicalPort().isEdge() && !isExist) {
-			OVXMap.getInstance().bindPhysicalPort(this.srcPort.getPhysicalPort(), this.tenantId);
-		}
     }
 
     /**
