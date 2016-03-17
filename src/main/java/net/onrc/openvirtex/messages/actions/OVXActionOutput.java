@@ -42,6 +42,7 @@ import net.onrc.openvirtex.routing.SwitchRoute;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openflow.protocol.OFMessage;
 import org.openflow.protocol.OFPort;
 import org.openflow.protocol.Wildcards.Flag;
 import org.openflow.protocol.action.OFAction;
@@ -268,7 +269,7 @@ public class OVXActionOutput extends OFActionOutput implements
              */
 
             // TODO check how to delete the packetOut and if it's required
-            boolean throwException = true;
+//            boolean throwException = true;
 
             for (final OVXPort outPort : outPortList) {
                 /**
@@ -318,7 +319,7 @@ public class OVXActionOutput extends OFActionOutput implements
                                         OFPort.OFPP_NONE.getValue(),
                                         dstPort.getPortNumber()), sw);
                         this.log.debug("PacketOut {} for a bigSwitch port, "
-                                + "generate a packet from Physical Port {}/{}",
+                                + "generate a packet to Physical Port {}/{}",
                                 match,
                                 dstPort.getParentSwitch().getSwitchName(),
                                 dstPort.getPortNumber());
@@ -329,7 +330,7 @@ public class OVXActionOutput extends OFActionOutput implements
                      * modify the packet and send to the physical switch.
                      *
                      */
-                    throwException = false;
+//                    throwException = false;
                     approvedActions.addAll(IPMapper
                             .prependUnRewriteActions(sw, match, outPort
                                     .getPhysicalPort()));
@@ -341,9 +342,9 @@ public class OVXActionOutput extends OFActionOutput implements
                             outPort.getPhysicalPortNumber());
                 }
             }
-            if (throwException) {
-                throw new DroppedMessageException();
-            }
+//            if (throwException) {
+//                throw new DroppedMessageException();
+//            }
         }
 
     }
