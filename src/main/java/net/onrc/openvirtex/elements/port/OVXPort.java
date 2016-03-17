@@ -115,6 +115,10 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     public Short getPhysicalPortNumber() {
         return this.physicalPort.getPortNumber();
     }
+    
+    public Short getPortTag() {
+    	return this.tag;
+    }
 
     public boolean isActive() {
         return isActive;

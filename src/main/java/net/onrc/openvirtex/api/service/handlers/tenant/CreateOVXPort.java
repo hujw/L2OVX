@@ -78,14 +78,16 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
                                 this.cmdName()), 0);
             } else {
                 this.log.info(
-                        "Created virtual port {} on virtual switch {} in virtual network {}",
-                        ovxPort.getPortNumber(), ovxPort.getParentSwitch()
-                                .getSwitchName(), virtualNetwork.getTenantId());
+                        "Created virtual port {} with tag {} on virtual switch {} in virtual network {}",
+                        ovxPort.getPortNumber(), ovxPort.getPortTag(),  
+                        ovxPort.getParentSwitch().getSwitchName(), 
+                        virtualNetwork.getTenantId());
                 Map<String, Object> reply = new HashMap<String, Object>(
                         ovxPort.getDBObject());
                 reply.put(TenantHandler.VDPID, ovxPort.getParentSwitch()
                         .getSwitchId());
                 reply.put(TenantHandler.TENANT, ovxPort.getTenantId());
+                reply.put(TenantHandler.PORT_TAG, ovxPort.getPortTag());
                 resp = new JSONRPC2Response(reply, 0);
             }
 
