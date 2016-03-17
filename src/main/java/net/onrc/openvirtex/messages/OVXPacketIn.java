@@ -92,7 +92,26 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 		if (linkField == OVXLinkField.VLAN) {
 //			this.tenantId = map.getTenantId(sw.getSwitchId(),
 //					port.getPortNumber());
+			
+			// for SDX, getting the tenant id by port and its tag
 			this.tenantId = map.getTenantId(port, match.getDataLayerVirtualLan());
+			
+			// modify by hujw
+			// untag all packet before sending to corresponding controller. 
+			Ethernet orig_eth = new Ethernet();
+			orig_eth.deserialize(this.getPacketData(), 0,
+					this.getPacketData().length);
+			// store the original tag for logging.
+			short orig_tag = orig_eth.getVlanID();
+			// remove the tag before sending to controller.
+			orig_eth.setVlanID((short)-1).setPriorityCode((byte)0);
+			this.setPacketData(orig_eth.serialize());
+			// reload packet to generate match
+			match.loadFromPacket(this.getPacketData(), inport);
+			this.log.info("tag modified [{}] -> [{}] and send to controller", 
+					orig_tag, 
+					orig_eth.getVlanID());
+			// end
 			
 			// The default vlan value of some vendor switches is not -1.
 			// So, we ignore the fields "DL_VLAN" and "DL_VLAN_PCP".
@@ -117,34 +136,16 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 //			this.installDropRule(sw, match);
 			return;
 		}
-		
-		// remove it because we preserve the original packets and sent them
-		// to the specific controllers. We only rewrite the match field until
-		// the packets sent to underlying physical switches. 
-//		if (linkField == OVXLinkField.VLAN) {
-//			match.setDataLayerVirtualLan(this.tenantId.shortValue());
-//		}
-		// end
         
 		/*
 		 * Check whether this packet arrived on an edge port.
 		 * 
 		 * if it did we do not need to rewrite anything, but just find which
-		 * controller this should be send to.
+		 * controller should be send to.
 		 */
 		if (this.port.isEdge()) {
 			this.log.debug("This port {} on sw {} is an edge port.", this.port
 					.getPortNumber(), this.port.getParentSwitch().getName());
-
-			// this.tenantId = this.fetchTenantId(match, map, true);
-			// if (this.tenantId == null) {
-			// this.log.warn(
-			// "PacketIn {} does not belong to any virtual network; "
-			// + "dropping and installing a temporary drop rule",
-			// this);
-			// this.installDropRule(sw, match);
-			// return;
-			// }
 
 			/*
 			 * Checks on vSwitch and the virtual port done in swndPkt.
@@ -171,23 +172,16 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 						match, this.tenantId);
 			}
 			
-			// modify by hujw
-			// untag all packet before sending to corresponding controller. 
-			Ethernet test_eth = new Ethernet();
-			test_eth.deserialize(this.getPacketData(), 0,
-					this.getPacketData().length);
-			
-			test_eth.setVlanID((short)-1).setPriorityCode((byte)0);
-			this.setPacketData(test_eth.serialize());
-			// end
+
 			
 			this.sendPkt(vSwitch, match, sw);
-			long totTime = System.nanoTime() - startTime;
-			this.log.debug("### Edge PacketIn executing time {} ###", totTime);
+//			long totTime = System.nanoTime() - startTime;
+//			this.log.debug("### Edge PacketIn executing time {} ###", totTime);
 			if (!(linkField == OVXLinkField.VLAN)) {
 				this.learnHostIP(match, map);
 			}
 			this.learnAddresses(match, map);
+			
 			return;
 		}
 
@@ -216,8 +210,8 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			// modified by hujw
 			OVXLinkUtils lUtils = new OVXLinkUtils(this.tenantId,
 					eth.getSourceMAC(), eth.getDestinationMAC());
-			
 			// end
+			
 			// rewrite the OFMatch with the values of the link
 			if (lUtils.isValid()) {
 				OVXPort srcPort = port.getOVXPort(lUtils.getTenantId(),
@@ -318,6 +312,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 					this.tenantId);
 			long totTime = startTime - System.nanoTime();
 			this.log.info("### IPv4/ARP PacketIn executing time {} ###", totTime);
+			
 			return;
 		}
 		// hujw
@@ -412,14 +407,6 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 //		fm.setBufferId(this.getBufferId());
 //		fm.setHardTimeout((short) 1);
 //		sw.sendMsg(fm, sw);
-	}
-	
-	private void installARPRule(final PhysicalSwitch sw, final OFMatch match) {
-		final OVXFlowMod fm = new OVXFlowMod();
-		fm.setMatch(match);
-		fm.setBufferId(this.getBufferId());
-		fm.setHardTimeout((short) 1);
-		sw.sendMsg(fm, sw);
 	}
 
 	private Integer fetchTenantId(final OFMatch match, final Mappable map,

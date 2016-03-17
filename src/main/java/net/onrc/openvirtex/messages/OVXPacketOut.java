@@ -18,12 +18,14 @@ package net.onrc.openvirtex.messages;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPMapper;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.port.OVXPort;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.ActionVirtualizationDenied;
 import net.onrc.openvirtex.exceptions.DroppedMessageException;
 import net.onrc.openvirtex.messages.actions.OVXActionNetworkLayerDestination;
@@ -83,7 +85,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
                         this.bufferId, sw);
                 return;
             }
-
+            
             this.match = new OFMatch().loadFromPacket(cause.getPacketData(),
                     this.inPort);
 //            
@@ -114,25 +116,25 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 //            	 this.log.info("####[NOT ARP={}]####",this.match);
 //            }
             
-            // hujw 
-            // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
-            // if you do not consider vlan, then you just remove any vlan fields (e.g., 
-            // vlan and vlan_pcp) when creating the match.
-            // So, we only separate this situation by watching the vlan tag in the match.
-            // If it is a value 0xffff, we only see the in_port field. 
-			if (this.match.getDataLayerVirtualLan() != net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
-				this.match = this.match.setWildcards(Wildcards.FULL
-						.matchOn(Flag.IN_PORT)
-						.matchOn(Flag.DL_TYPE)
-						.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
-						.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-			} else {
-
-				this.match = this.match.setWildcards(Wildcards.FULL
-						.matchOn(Flag.IN_PORT)
-						.matchOn(Flag.DL_TYPE)
-						.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-			}
+//            // hujw 
+//            // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
+//            // if you do not consider vlan, then you just remove any vlan fields (e.g., 
+//            // vlan and vlan_pcp) when creating the match.
+//            // So, we only separate this situation by watching the vlan tag in the match.
+//            // If it is a value 0xffff, we only see the in_port field. 
+//			if (this.match.getDataLayerVirtualLan() != net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED) {
+//				this.match = this.match.setWildcards(Wildcards.FULL
+//						.matchOn(Flag.IN_PORT)
+//						.matchOn(Flag.DL_TYPE)
+//						.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP)
+//						.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+//			} else {
+//
+//				this.match = this.match.setWildcards(Wildcards.FULL
+//						.matchOn(Flag.IN_PORT)
+//						.matchOn(Flag.DL_TYPE)
+//						.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
+//			}
             
             this.setBufferId(cause.getBufferId());
             ovxMatch = new OVXMatch(match);
@@ -168,10 +170,26 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
             }
         }
 
+		// modify by hujw
+		Ethernet orig_eth = new Ethernet();
+		orig_eth.deserialize(this.getPacketData(), 0,
+				this.getPacketData().length);
+		// store the original tag for logging.
+		short orig_tag = orig_eth.getVlanID();
+		// tag vlan id by ovxMatch object.
+		orig_eth.setVlanID(ovxMatch.getDataLayerVirtualLan()).setPriorityCode((byte) 0);
+		this.setPacketData(orig_eth.serialize());
+		this.log.info("tag modified [{}] -> [{}] and send to switch", 
+				orig_tag, 
+				orig_eth.getVlanID());
+		// end
+        
+        
         if (U16.f(this.getInPort()) < U16.f(OFPort.OFPP_MAX.getValue())) {
             this.setInPort(inport.getPhysicalPortNumber());
         }
-        this.prependRewriteActions(sw);
+        // We think this statement can be removed in SDX branch.
+//        this.prependRewriteActions(sw);
         this.setActions(this.approvedActions);
         this.setActionsLength((short) 0);
         this.setLengthU(OVXPacketOut.MINIMUM_LENGTH + this.packetData.length);
@@ -186,7 +204,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
         if (U16.f(this.getInPort()) < U16.f(OFPort.OFPP_MAX.getValue())) {
             OVXMessageUtil.translateXid(this, inport);
         }
-        this.log.info("Sending packet-out to sw {}: {}", sw.getName(), this);
+        this.log.info("Sending packet-out to sw {}: {}", sw.getSwitchName(), this);
         sw.sendSouth(this, inport);
     }
 
