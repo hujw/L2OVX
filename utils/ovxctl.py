@@ -564,6 +564,22 @@ def do_getVirtualTopology(gopts, opts, args):
     req = { "tenantId": int(args[0]) }
     result = connect(gopts, "status", "getVirtualTopology", data=req, passwd=getPasswd(gopts))
     print json.dumps(result)
+
+def pa_getPhysicalSwitchPorts(args, cmd):
+    usage = "%s [<physical_dpid>]" % USAGE.format(cmd)
+    (sdesc, ldesc) = DESCS[cmd]
+    parser = OptionParser(usage=usage, description=ldesc)
+    return parser.parse_args(args)    
+
+def do_getPhysicalSwitchPorts(gopts, opts, args):
+    if len(args) > 1:
+        print "getPhysicalSwitchPorts : May specify optional physical dpid"
+        sys.exit()
+    req = {}
+    if len(args) == 1:
+        req["dpid"] = int(args[0].replace(":", ""), 16)
+    result = connect(gopts, "status", "getPhysicalSwitchPorts", data=req, passwd=getPasswd(gopts))
+    print json.dumps(result)
         
 # Other methods
 
@@ -684,6 +700,7 @@ CMDS = {
     'getVirtualLinkMapping': (pa_getVirtualLinkMapping, do_getVirtualLinkMapping),
     'getVirtualSwitchMapping': (pa_getVirtualSwitchMapping, do_getVirtualSwitchMapping),
     'getVirtualTopology': (pa_getVirtualTopology, do_getVirtualTopology),
+    'getPhysicalSwitchPorts': (pa_getPhysicalSwitchPorts, do_getPhysicalSwitchPorts),
     
     'help' : (pa_help, do_help)
 }
@@ -795,7 +812,10 @@ DESCS = {
                                "\nExample: getVirtualSwitchMapping 1")),
     'getVirtualTopology' : ("Get the virtual topology",
                                  ("Get the virtual topology. Must specify a tenant_id.",
-                               "\nExample: getVirtualTopology 1"))
+                               "\nExample: getVirtualTopology 1")),
+    'getPhysicalSwitchPorts' : ("Get the physical ports of a specified switch or all switches",
+                              ("Get the physical ports of a specified switch or all switches. Specify optional physical switch_id."
+                              "\nExample: getPhysicalSwitchPorts")),
 }
 
 USAGE="%prog {}"

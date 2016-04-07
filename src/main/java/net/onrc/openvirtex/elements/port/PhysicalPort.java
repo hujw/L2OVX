@@ -219,4 +219,18 @@ public class PhysicalPort extends Port<PhysicalSwitch, PhysicalLink> {
             this.portLink.ingressLink.unregister();
         }
     }
+    
+    /*
+     * Converts elements of a physical port to physical data.
+     * TODO: rewrite
+     *
+     * @return map that contains physical data
+     */
+    public HashMap<String, Object> convertToPhysical() {
+        HashMap<String, Object> map = new HashMap<String, Object>();
+        map.put("name", this.getName());
+        map.put("port", this.getPortNumber());
+        
+        return map;
+    }
 }
