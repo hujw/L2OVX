@@ -108,7 +108,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			this.setPacketData(orig_eth.serialize());
 			// reload packet to generate match
 			match.loadFromPacket(this.getPacketData(), inport);
-			this.log.info("tag modified [{}] -> [{}] and send to controller", 
+			this.log.debug("tag modified [{}] -> [{}] and send to controller", 
 					orig_tag, 
 					orig_eth.getVlanID());
 			// end
