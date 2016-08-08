@@ -86,11 +86,11 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
         }
         final short inport = this.getMatch().getInputPort();
         
-		this.match = this.match.setWildcards(Wildcards.FULL
-				.matchOn(Flag.IN_PORT)
-				.matchOn(Flag.DL_TYPE)
-				.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
-				.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+//		this.match = this.match.setWildcards(Wildcards.FULL
+//				.matchOn(Flag.IN_PORT)
+//				.matchOn(Flag.DL_TYPE)
+//				.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
+//				.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
 
 //      // for fixed flow entry
 //        this.setIdleTimeout((short)0);

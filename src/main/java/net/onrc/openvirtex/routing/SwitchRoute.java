@@ -303,9 +303,14 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                                     .getPortNumber(), fe);
                     
                     OVXFlowMod fm = fe.clone();
-                    fm.setCookie(((OVXFlowTable) this.getSrcPort()
-                            .getParentSwitch().getFlowTable()).getCookie(fe,
-                            true));
+                    // modified by hujw
+                    // Remove this section because we only modify the original flow not to create a new flow
+//                    fm.setCookie(((OVXFlowTable) this.getSrcPort()
+//                            .getParentSwitch().getFlowTable()).getCookie(fe,
+//                            true));
+                    // end
+                    
+                    
 //                    // modified by hujw
 //                    // attach tenantId as the vlan field of ovxMatch
 //                    if (linkField == OVXLinkField.VLAN) {
@@ -318,7 +323,6 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
 //                    			fm.getActions());
 //                    }
 //                    // end
-                    SwitchRoute.log.info("[[command of fm]]: {}", fm.getCommand());
                     this.generateRouteFMs(fm.clone());
                     this.generateFirstFM(fm.clone());
                 } 
@@ -458,6 +462,9 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     actLenght += act.getLengthU();
                 }
                 fm.setLengthU(OFFlowMod.MINIMUM_LENGTH + actLenght);
+                // modified by hujw 
+                // Assign modify flow instead of adding new flow
+                fm.setCommand(OFFlowMod.OFPFC_MODIFY);
                 phyLink.getSrcPort().getParentSwitch()
                         .sendMsg(fm, phyLink.getSrcPort().getParentSwitch());
                 SwitchRoute.log.info("Sending big-switch route last fm to sw {}: {}",
@@ -534,14 +541,13 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         fm.getMatch().setInputPort(this.getSrcPort().getPhysicalPortNumber());
         
         // modify by hujw
-        if ((fm.getMatch().getDataLayerVirtualLan() == 
-        		net.onrc.openvirtex.packet.Ethernet.VLAN_UNTAGGED)) {
-        	fm.getMatch().setWildcards(Wildcards.FULL
-        		.matchOn(Flag.IN_PORT)
-        		.matchOn(Flag.DL_TYPE)
-        		.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST));
-    	} 
-//        // for fixed flow entry
+        
+        
+    	fm.getMatch().setWildcards(Wildcards.FULL
+            	.matchOn(Flag.IN_PORT)
+            	.matchOn(Flag.DL_VLAN)
+            	.matchOn(Flag.DL_VLAN_PCP));
+    		
 //        fm.setIdleTimeout((short)0);
         
         // add the output action with the physical outPort (srcPort of the
@@ -555,7 +561,9 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
                     .getValue()));
         }
 
-//        fm.setCommand(OFFlowMod.OFPFC_MODIFY);
+        // modified by hujw 
+        // Assign modify flow instead of adding new flow
+        fm.setCommand(OFFlowMod.OFPFC_MODIFY);
         fm.setActions(approvedActions);
         int actLenght = 0;
         for (final OFAction act : approvedActions) {

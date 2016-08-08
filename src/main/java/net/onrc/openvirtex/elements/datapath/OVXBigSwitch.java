@@ -15,9 +15,12 @@
  ******************************************************************************/
 package net.onrc.openvirtex.elements.datapath;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -25,11 +28,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
+import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.RoutingAlgorithmException;
+import net.onrc.openvirtex.messages.OVXFlowMod;
+import net.onrc.openvirtex.messages.OVXPacketOut;
+import net.onrc.openvirtex.messages.actions.OVXActionStripVirtualLan;
+import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
+import net.onrc.openvirtex.messages.statistics.OVXFlowStatisticsReply;
+import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.routing.RoutingAlgorithms;
 import net.onrc.openvirtex.routing.RoutingAlgorithms.RoutingType;
 import net.onrc.openvirtex.routing.SwitchRoute;
@@ -38,7 +50,13 @@ import net.onrc.openvirtex.util.BitSetIndex.IndexType;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.openflow.protocol.OFFlowMod;
+import org.openflow.protocol.OFMatch;
 import org.openflow.protocol.OFMessage;
+import org.openflow.protocol.Wildcards;
+import org.openflow.protocol.Wildcards.Flag;
+import org.openflow.protocol.action.OFAction;
+import org.openflow.protocol.action.OFActionOutput;
 import org.openflow.util.U8;
 
 /**
@@ -194,18 +212,34 @@ public class OVXBigSwitch extends OVXSwitch {
          * is computed only if the ovxPorts belong to different physical
          * switches.
          */
+    	LinkedList<SwitchRoute> routes = new LinkedList<SwitchRoute>();
         if (this.alg.getRoutingType() != RoutingType.NONE) {
             for (final OVXPort srcPort : this.portMap.values()) {
                 for (final OVXPort dstPort : this.portMap.values()) {
                     if (srcPort.getPortNumber() != dstPort.getPortNumber()
                             && srcPort.getPhysicalPort().getParentSwitch() != dstPort
                                     .getPhysicalPort().getParentSwitch()) {
-                        this.getRoute(srcPort, dstPort);//.register();
+                    	SwitchRoute sr = this.getRoute(srcPort, dstPort);
+                    	sr.register();
+                    	routes.add(sr);
                     }
                 }
             }
         }
-        return super.boot();
+        boolean re = super.boot();
+        
+        // Wait for connecting to the controller 
+        try {
+            Thread.sleep(100);
+        } catch (final InterruptedException e1) {
+            log.warn("Timeout failed: {}", e1);
+        }
+        
+		for (SwitchRoute route : routes) {
+			writeFlowMod(route);
+		}
+        
+        return re;
     }
 
     /**
@@ -482,6 +516,175 @@ public class OVXBigSwitch extends OVXSwitch {
             }
             itr.remove();
         }
+    }
+    
+    private OVXFlowMod createFlowMod() {
+    	OVXFlowMod fm = new OVXFlowMod();
+    	fm.setCommand(OFFlowMod.OFPFC_ADD);
+        // Create a buffer id
+        int bufferId = OVXPacketOut.BUFFER_ID_NONE;
+        if (this.getFromBufferMap(bufferId) != null) {
+            bufferId = this.getFromBufferMap(bufferId).getBufferId();
+        }
+        fm.setBufferId(bufferId);
+        
+        return fm;
+    }
+    
+    private OFMatch createMatch() {
+    	OFMatch match = new OFMatch();
+        // Set match filter
+        match.setWildcards(Wildcards.FULL
+				.matchOn(Flag.IN_PORT)
+				.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+        
+        return match;
+    }
+    
+    private void writeFlowMod(SwitchRoute sr) {
+        OVXPort srcPort = sr.getSrcPort();
+        OVXPort dstPort = sr.getDstPort();
+        long newc = ((OVXFlowTable)this.flowTable).getCookie();
+        
+        // Process the virtual flow
+        OVXFlowMod ovxfm = createFlowMod();
+        OFMatch ovxmatch = createMatch();
+        ovxmatch.setInputPort(srcPort.getPortNumber());
+        
+        ovxfm.setCookie(newc);
+        ovxfm.setMatch(ovxmatch);
+        ovxfm.setActions(Arrays.asList((OFAction) new OFActionOutput(
+        		dstPort.getPortNumber(), (short) 0xffff)));
+        
+        // Record the OVXFlowMod in the flowtable of OVXSwitch
+//        srcPort.getParentSwitch().getFlowTable().handleFlowMods(ovxfm);
+        ((OVXFlowTable)this.flowTable).addFlowMod(ovxfm, newc);
+        log.info(srcPort.getParentSwitch().getFlowTable().getFlowTable().size());
+        // end
+        
+        OVXFlowMod fm = null;
+        OFMatch match = null;
+        List<OFAction> approvedActions = null;
+        OVXActionVirtualLanIdentifier vlanAct = null;
+//        // Set inport 
+//        match.setInputPort(srcPort.getPhysicalPort().getPortNumber());
+//        fm.setMatch(match);
+//        // Output to the first port of the route
+//        approvedActions.add(new OFActionOutput(sr.getPathSrcPort().getPortNumber()));
+//        
+//        vlanAct = new OVXActionVirtualLanIdentifier();
+//    	vlanAct.setVirtualLanIdentifier(this.tenantId.shortValue());
+//    	approvedActions.add(0, vlanAct);
+//    	
+//    	fm.setActions(approvedActions);
+//    	
+//    	fm.setLengthU(OVXFlowMod.MINIMUM_LENGTH);
+//        for (final OFAction act : approvedActions) {
+//            fm.setLengthU(fm.getLengthU() + act.getLengthU());
+//        }
+//        // src edge node
+//        srcPort.getPhysicalPort().getParentSwitch().sendMsg(fm, this);
+//        log.info(fm);
+        
+        PhysicalPort inPort = null;
+        PhysicalPort outPort = null;
+        // src edge node --> core nodes --> dst edge node
+    	// core nodes
+		try {
+			// Need to skip one port
+			for (final PhysicalLink phyLink : OVXMap.getInstance().getRoute(sr)) {
+				if (inPort == null) {
+					fm = createFlowMod();
+					
+					match = createMatch();
+					match.setInputPort(srcPort.getPhysicalPort().getPortNumber());
+					if (srcPort.getPortTag() != Ethernet.VLAN_UNTAGGED) {
+						match.setDataLayerVirtualLan(srcPort.getPortTag().shortValue());
+					}
+					fm.setMatch(match);
+					
+					approvedActions = new LinkedList<OFAction>();
+			        approvedActions.add(new OFActionOutput(phyLink.getSrcPort().getPortNumber()));
+			        
+			        vlanAct = new OVXActionVirtualLanIdentifier();
+			    	vlanAct.setVirtualLanIdentifier(this.tenantId.shortValue());
+			    	approvedActions.add(0, vlanAct);
+			    	fm.setActions(approvedActions);
+			    	
+			    	fm.setLengthU(OVXFlowMod.MINIMUM_LENGTH);
+			        for (final OFAction act : approvedActions) {
+			            fm.setLengthU(fm.getLengthU() + act.getLengthU());
+			        }
+			        fm.setCookie(newc);
+			        
+			        // Send OFFlowMod to switch
+			        phyLink.getSrcPort().getParentSwitch().sendMsg(fm, this);
+			        
+				} else {
+					// The src node of next link
+					outPort = phyLink.getSrcPort();
+					fm = createFlowMod();
+					
+					match = createMatch();
+					match.setInputPort(inPort.getPortNumber())
+							.setDataLayerVirtualLan(this.tenantId.shortValue());
+					fm.setMatch(match);
+					
+	                fm.setLengthU(OFFlowMod.MINIMUM_LENGTH
+	                        + OFActionOutput.MINIMUM_LENGTH);
+	                fm.setActions(Arrays.asList((OFAction) new OFActionOutput(
+	                        outPort.getPortNumber(), (short) 0xffff)));
+			        fm.setCookie(newc);
+			        
+	                // The switch of the src port will be the same as "inPort" variable.
+	                outPort.getParentSwitch().sendMsg(fm, this);
+				}
+				inPort = phyLink.getDstPort();
+			}
+			
+		} catch (LinkMappingException e) {
+			log.warn("Could not fetch route : {}", e);
+		}
+		
+		// dst edge node
+		fm = createFlowMod();
+		match = createMatch();
+		
+		// Set inport (the last port of path)
+        match.setInputPort(inPort.getPortNumber())
+        		.setDataLayerVirtualLan(this.tenantId.shortValue());
+        fm.setMatch(match);
+        // Flow actions
+        approvedActions = new LinkedList<OFAction>();
+        // Output to the first port of the route
+        approvedActions.add(new OFActionOutput(dstPort.getPhysicalPort().getPortNumber()));
+        
+        if (dstPort.getPortTag() != Ethernet.VLAN_UNTAGGED) {
+        	vlanAct = new OVXActionVirtualLanIdentifier();
+        	vlanAct.setVirtualLanIdentifier(dstPort.getPortTag().shortValue());
+        	approvedActions.add(0, vlanAct);
+        	
+        } else {
+        	OVXActionStripVirtualLan stripVlanAct = new OVXActionStripVirtualLan();
+        	approvedActions.add(0, stripVlanAct);
+        	
+        }
+    	
+    	fm.setActions(approvedActions);
+    	
+    	fm.setLengthU(OVXFlowMod.MINIMUM_LENGTH);
+        for (final OFAction act : approvedActions) {
+            fm.setLengthU(fm.getLengthU() + act.getLengthU());
+        }
+        fm.setCookie(newc);
+        
+        // dst edge node
+        dstPort.getPhysicalPort().getParentSwitch().sendMsg(fm, this);
+		
+//		log.info("Set vlan id {} from sw {} port {}", this.tenantId, srcPort.getPhysicalPort().getParentSwitch().getSwitchName(), srcPort.getPhysicalPortNumber());
+//
+//		Map<Short, OVXPort> m = this.getPorts();
+//		m.values();
     }
 
 }
