@@ -1,0 +1,22 @@
+[In L2OVX]
+
+python ovxctl.py -h 211.79.63.108 -n createNetwork tcp:x.x.x.x:10000 10.0.0.0 16
+python ovxctl.py -h 211.79.63.108 -n createSwitch 1 00:00:00:00:00:00:01:00,00:00:00:00:00:00:02:00,00:00:00:00:00:00:03:00,00:00:00:00:00:00:07:00
+python ovxctl.py -h 211.79.63.108 -n createPort 1 00:00:00:00:00:00:01:00 1 0 
+python ovxctl.py -h 211.79.63.108 -n createPort 1 00:00:00:00:00:00:03:00 3 0  
+python ovxctl.py -h 211.79.63.108 -n startPort 1 00:a4:23:05:00:00:00:01 1   
+python ovxctl.py -h 211.79.63.108 -n startPort 1 00:a4:23:05:00:00:00:01 2
+python ovxctl.py -h 211.79.63.108 -n startNetwork 1
+
+
+[In mininet]
+
+mininet> h_SEA_1 ping h_SFO_3
+mininet> link SEA SFO down
+mininet> link SEA SFO up
+
+
+[In OVS]
+sudo ifconfig SEA-eth5 down
+sudo ifconfig SEA-eth5 up
+sudo ovs-ofctl dump-flows SEA
