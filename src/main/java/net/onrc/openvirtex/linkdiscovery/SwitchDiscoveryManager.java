@@ -241,6 +241,8 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         final short alen = SwitchDiscoveryManager.countActionsLen(actionsList);
         this.lldpPacket.setPort(port);
         this.ethPacket.setSourceMACAddress(port.getHardwareAddress());
+        // For new VPLS equipments
+        this.ethPacket.setVlanID((short)1);
         
         final byte[] lldp = this.ethPacket.serialize();
         packetOut.setActionsLength(alen);
