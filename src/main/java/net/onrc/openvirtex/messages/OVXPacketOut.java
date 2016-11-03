@@ -172,14 +172,14 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 
 		// modify by hujw
 		Ethernet orig_eth = new Ethernet();
-		orig_eth.deserialize(this.getPacketData(), 0,
-				this.getPacketData().length);
+		orig_eth.deserialize(this.packetData, 0,
+				this.packetData.length);
 		// store the original tag for logging.
 		short orig_tag = orig_eth.getVlanID();
 		// tag vlan id by ovxMatch object.
 		orig_eth.setVlanID(ovxMatch.getDataLayerVirtualLan()).setPriorityCode((byte) 0);
 		this.setPacketData(orig_eth.serialize());
-		this.log.info("tag modified [{}] -> [{}] and send to switch", 
+		this.log.debug("tag modified [{}] -> [{}] and send to switch", 
 				orig_tag, 
 				orig_eth.getVlanID());
 		// end

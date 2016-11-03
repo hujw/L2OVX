@@ -98,6 +98,8 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
     //hujw
     final OVXLinkField linkField = OpenVirteXController.getInstance()
             .getOvxLinkField();
+    // Set the default timeout of flows
+    private short flowTimeout = 10;
 
     /**
      * Instantiates a new switch route for the given switch between
@@ -429,6 +431,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         }
         Collections.reverse(reverseLinks);
 
+        fm.setIdleTimeout(flowTimeout);
         for (final PhysicalLink phyLink : reverseLinks) {
             if (outPort != null) {
                 inPort = phyLink.getSrcPort();
@@ -556,6 +559,7 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         }
 
 //        fm.setCommand(OFFlowMod.OFPFC_MODIFY);
+        fm.setIdleTimeout(flowTimeout);
         fm.setActions(approvedActions);
         int actLenght = 0;
         for (final OFAction act : approvedActions) {

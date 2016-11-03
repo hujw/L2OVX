@@ -63,7 +63,9 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
     // hujw
     private final OVXLinkField linkField = OpenVirteXController.getInstance()
             .getOvxLinkField();
-
+    // Set the default timeout of flows
+    private short flowTimeout = 10;
+    
     @Override
     public void devirtualize(final OVXSwitch sw) {
         /* Drop LLDP-matching messages sent by some applications */
@@ -132,6 +134,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
 
         final OVXPort ovxInPort = sw.getPort(inport);
         this.setBufferId(bufferId);
+        this.setIdleTimeout(flowTimeout);
 
         if (ovxInPort == null) {
             if (this.match.getWildcardObj().isWildcarded(Flag.IN_PORT)) {
