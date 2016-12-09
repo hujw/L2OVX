@@ -119,7 +119,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
             this.bddpEth.setEtherType(Ethernet.TYPE_BSN);
             this.bddpEth.setDestinationMACAddress(OVXLLDP.BDDP_MULTICAST);
             this.bddpEth.setPad(true);
-            log.info("Using BDDP to discover network");
+            log.debug("Using BDDP to discover network");
         }
         PhysicalNetwork.getTimer().newTimeout(this, this.probeRate,
                 TimeUnit.MILLISECONDS);

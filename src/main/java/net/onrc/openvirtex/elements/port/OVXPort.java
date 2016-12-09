@@ -76,8 +76,8 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
         else
         	this.portNumber = this.parentSwitch.getNextPortNumber(portNumber);
         
-        if ((tag > 0 && tag < 4095) || (tag == Ethernet.VLAN_UNTAGGED))
-        	this.tag = tag;
+        this.tag = (tag > 0 && tag < 4095) ? tag : Ethernet.VLAN_UNTAGGED;
+        
         this.name = "ovxport-" + this.portNumber;
         this.isEdge = isEdge;
         this.hardwareAddress = port.getHardwareAddress();

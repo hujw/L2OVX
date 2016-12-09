@@ -357,6 +357,16 @@ public final class OVXMap implements Mappable {
         for (PhysicalLink l : physicalLinks) {
             this.addLinktoRoute(l, route);
         }
+        
+        for (final PhysicalLink edge : physicalLinks) {
+			PhysicalLink plink = PhysicalNetwork.getInstance().getLink(
+					edge.getSrcPort(), edge.getDstPort());
+			if (plink != null) {
+				plink.increaseLinkCount();
+				log.info("Increase the weight of [{}] to {}", plink,
+						plink.getLinkCount());
+			}
+		}
     }
 
     /**
@@ -708,7 +718,7 @@ public final class OVXMap implements Mappable {
 					edge.getSrcPort(), edge.getDstPort());
 			if (plink != null) {
 				plink.decreaseLinkCount();
-				log.info("decrease edge {}, count {}", plink,
+				log.info("Decrease the weight of [{}] to {}", plink,
 						plink.getLinkCount());
 			}
 		}

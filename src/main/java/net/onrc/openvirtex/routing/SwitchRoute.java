@@ -320,13 +320,13 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
 //                    			fm.getActions());
 //                    }
 //                    // end
-                    SwitchRoute.log.info("[[command of fm]]: {}", fm.getCommand());
+                    SwitchRoute.log.debug("[[command of fm]]: {}", fm.getCommand());
                     this.generateRouteFMs(fm.clone());
                     this.generateFirstFM(fm.clone());
                 } 
             }
         }
-        log.info(
+        log.debug(
                 "Virtual network {}, switch {}, route {} between ports src:{} - dst:{} flow-mod switched to the new path",
                 this.getTenantId(), this.getSrcPort().getParentSwitch()
                         .getSwitchName(), this.getRouteId(), this.getSrcPort()
