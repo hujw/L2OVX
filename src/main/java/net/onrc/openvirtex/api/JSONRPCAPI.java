@@ -57,14 +57,14 @@ public class JSONRPCAPI extends AbstractHandler {
             final HttpServletRequest request, final HttpServletResponse response)
             throws IOException, ServletException {
 
-        if (baseRequest.getAuthentication() == null
-                || baseRequest.getAuthentication().equals(
-                        Authentication.UNAUTHENTICATED)) {
-            response.sendError(Response.SC_UNAUTHORIZED, "Permission denied.");
-            baseRequest.setHandled(true);
-
-            return;
-        }
+//        if (baseRequest.getAuthentication() == null
+//                || baseRequest.getAuthentication().equals(
+//                        Authentication.UNAUTHENTICATED)) {
+//            response.sendError(Response.SC_UNAUTHORIZED, "Permission denied.");
+//            baseRequest.setHandled(true);
+//
+//            return;
+//        }
         if (target.equals("/status")) {
             this.monitoringService.handle(request, response);
 
@@ -74,9 +74,9 @@ public class JSONRPCAPI extends AbstractHandler {
         } else if (target.equals("/admin")) {
             this.adminService.handle(request, response);
 
-        } else {
-            response.sendError(Response.SC_NOT_FOUND, target
-                    + " is not a service offered by OVX");
+//        } else {
+//            response.sendError(Response.SC_NOT_FOUND, target
+//                    + " is not a service offered by OVX");
 
         }
         baseRequest.setHandled(true);
