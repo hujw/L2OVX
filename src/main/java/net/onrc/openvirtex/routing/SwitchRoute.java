@@ -683,6 +683,38 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
 
         return list;
     }
+    
+    /**
+     * Gets the set of physical links that make up ONLY primary paths for the switch route.
+     *
+     * @return set of physical links
+     */
+    public Set<PhysicalLink> getPrimaryLinks() {
+
+        Set<PhysicalLink> list = new HashSet<PhysicalLink>();
+        try {
+            list.addAll(OVXMap.getInstance().getRoute(this));
+        } catch (LinkMappingException e) {
+            log.warn("Unable to fetch primary route : {}", e.getMessage());
+        }
+
+        return list;
+    }
+    
+    /**
+     * Gets the set of physical links that make up ONLY backup paths for the switch route.
+     *
+     * @return set of physical links
+     */
+    public Set<PhysicalLink> getBackupLinks() {
+
+        Set<PhysicalLink> list = new HashSet<PhysicalLink>();
+        for (List<PhysicalLink> links : backupRoutes.values()) {
+            list.addAll(links);
+        }
+
+        return list;
+    }
 
     /**
      * Attempts to switch this route back to the original path.

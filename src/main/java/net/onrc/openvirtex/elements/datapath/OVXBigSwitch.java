@@ -413,14 +413,35 @@ public class OVXBigSwitch extends OVXSwitch {
         }
     }
 
-    public HashSet<PhysicalLink> getAllLinks() {
+    public HashSet<PhysicalLink> getAllPrimaryLinks() {
         HashSet<PhysicalLink> links = new HashSet<PhysicalLink>();
         for (OVXPort p1 : getPorts().values()) {
             for (OVXPort p2 : getPorts().values()) {
                 if (!p1.equals(p2)) {
                     try {
-                        links.addAll(getRouteMap().get(p1).get(p2).getLinks());
-                        links.addAll(getRouteMap().get(p2).get(p1).getLinks());
+                        links.addAll(getRouteMap().get(p1).get(p2).getPrimaryLinks());
+                        links.addAll(getRouteMap().get(p2).get(p1).getPrimaryLinks());
+                    } catch (NullPointerException npe) {
+                        log.debug(
+                                "No route defined on switch {} in virtual network {} between ports {} and {}",
+                                this.getSwitchName(), this.getTenantId(),
+                                p1.getPortNumber(), p2.getPortNumber());
+                        continue;
+                    }
+                }
+            }
+        }
+        return links;
+    }
+    
+    public HashSet<PhysicalLink> getAllBackupLinks() {
+        HashSet<PhysicalLink> links = new HashSet<PhysicalLink>();
+        for (OVXPort p1 : getPorts().values()) {
+            for (OVXPort p2 : getPorts().values()) {
+                if (!p1.equals(p2)) {
+                    try {
+                        links.addAll(getRouteMap().get(p1).get(p2).getBackupLinks());
+                        links.addAll(getRouteMap().get(p2).get(p1).getBackupLinks());
                     } catch (NullPointerException npe) {
                         log.debug(
                                 "No route defined on switch {} in virtual network {} between ports {} and {}",

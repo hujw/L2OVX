@@ -54,13 +54,21 @@ public class GetVirtualSwitchMapping extends ApiHandler<Map<String, Object>> {
                 subRes.clear();
                 list.clear();
                 if (vsw instanceof OVXBigSwitch) {
-                    List<Integer> l = new LinkedList<Integer>();
-                    for (PhysicalLink li : ((OVXBigSwitch) vsw).getAllLinks()) {
-                        l.add(li.getLinkId());
+                    List<String> l = new LinkedList<String>();
+                    for (PhysicalLink li : ((OVXBigSwitch) vsw).getAllPrimaryLinks()) {
+                        l.add(li.toString());
                     }
-                    subRes.put("links", l);
+                    subRes.put("primarylinks", l);
+                    
+                    // add the backup paths
+                    l = new LinkedList<String>();
+                    for (PhysicalLink li : ((OVXBigSwitch) vsw).getAllBackupLinks()) {
+                        l.add(li.toString());
+                    }
+                    subRes.put("backuplinks", l);
                 } else {
-                    subRes.put("links", new LinkedList<>());
+                    subRes.put("primarylinks", new LinkedList<>());
+                    subRes.put("backuplinks", new LinkedList<>());
                 }
                 for (PhysicalSwitch psw : map.getPhysicalSwitches(vsw)) {
                     list.add(psw.getSwitchName());
