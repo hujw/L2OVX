@@ -15,6 +15,7 @@
  ******************************************************************************/
 package net.onrc.openvirtex.api.service.handlers.monitoring;
 
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,23 +44,26 @@ public class GetPhysicalFlowtable extends ApiHandler<Map<String, Object>> {
     @Override
     public JSONRPC2Response process(final Map<String, Object> params) {
         try {
-            final Number dpid = HandlerUtils.<Number>fetchField(
-                    MonitoringHandler.DPID, params, false, -1);
+            final String dpid = HandlerUtils.<String>fetchField(
+                    MonitoringHandler.DPID, params, false, "-1");
+            long dpidValue = new BigInteger(dpid.replaceAll(":", ""), 16).longValue();
             final OVXMap map = OVXMap.getInstance();
             LinkedList<OVXFlowStatisticsReply> flows = new LinkedList<OVXFlowStatisticsReply>();
 
-            if (dpid.longValue() == -1) {
-                HashMap<String, List<Map<String, Object>>> res = new HashMap<String, List<Map<String, Object>>>();
+            HashMap<String, List<Map<String, Object>>> res = new HashMap<String, List<Map<String, Object>>>();
+            if (dpidValue == -1) {
                 for (PhysicalSwitch sw : PhysicalNetwork.getInstance()
                         .getSwitches()) {
                     flows = aggregateFlowsBySwitch(sw.getSwitchId(), map);
                     res.put(sw.getSwitchName(), flowModsToMap(flows));
                 }
-                this.resp = new JSONRPC2Response(res, 0);
+                //this.resp = new JSONRPC2Response(res, 0);
             } else {
-                flows = aggregateFlowsBySwitch(dpid.longValue(), map);
-                this.resp = new JSONRPC2Response(flowModsToMap(flows), 0);
+                flows = aggregateFlowsBySwitch(dpidValue, map);
+                res.put(dpid, flowModsToMap(flows));
+                //this.resp = new JSONRPC2Response(flowModsToMap(flows), 0);
             }
+            this.resp = new JSONRPC2Response(res, 0);
 
         } catch (ClassCastException | MissingRequiredField e) {
             this.resp = new JSONRPC2Response(new JSONRPC2Error(
