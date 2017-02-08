@@ -545,8 +545,8 @@ public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         
     	fm.getMatch().setWildcards(Wildcards.FULL
             	.matchOn(Flag.IN_PORT)
-            	.matchOn(Flag.DL_VLAN)
-            	.matchOn(Flag.DL_VLAN_PCP));
+            	.matchOn(Flag.DL_VLAN));
+            	//.matchOn(Flag.DL_VLAN_PCP));
     		
 //        fm.setIdleTimeout((short)0);
         

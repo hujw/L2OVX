@@ -179,7 +179,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
 		// tag vlan id by ovxMatch object.
 		orig_eth.setVlanID(ovxMatch.getDataLayerVirtualLan()).setPriorityCode((byte) 0);
 		this.setPacketData(orig_eth.serialize());
-		this.log.info("tag modified [{}] -> [{}] and send to switch", 
+		this.log.debug("tag modified [{}] -> [{}] and send to switch", 
 				orig_tag, 
 				orig_eth.getVlanID());
 		// end
@@ -204,7 +204,7 @@ public class OVXPacketOut extends OFPacketOut implements Devirtualizable {
         if (U16.f(this.getInPort()) < U16.f(OFPort.OFPP_MAX.getValue())) {
             OVXMessageUtil.translateXid(this, inport);
         }
-        this.log.info("Sending packet-out to sw {}: {}", sw.getSwitchName(), this);
+        this.log.debug("Sending packet-out to sw {}: {}", sw.getSwitchName(), this);
         sw.sendSouth(this, inport);
     }
 

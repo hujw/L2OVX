@@ -536,7 +536,7 @@ public class OVXBigSwitch extends OVXSwitch {
         // Set match filter
         match.setWildcards(Wildcards.FULL
 				.matchOn(Flag.IN_PORT)
-				.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
+				.matchOn(Flag.DL_VLAN));//.matchOn(Flag.DL_VLAN_PCP));
         
         return match;
     }
@@ -600,6 +600,15 @@ public class OVXBigSwitch extends OVXSwitch {
 					match.setInputPort(srcPort.getPhysicalPort().getPortNumber());
 					if (srcPort.getPortTag() != Ethernet.VLAN_UNTAGGED) {
 						match.setDataLayerVirtualLan(srcPort.getPortTag().shortValue());
+						
+					} else {
+						// This means the "match" only consider the inport.
+						// To do this because the Brocade switch does not support
+						// the value of VLAN field set to 0xFFFF when the packet 
+						// is untagged. 
+						match.setWildcards(Wildcards.FULL
+								.matchOn(Flag.IN_PORT));
+						
 					}
 					fm.setMatch(match);
 					

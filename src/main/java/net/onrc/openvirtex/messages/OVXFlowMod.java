@@ -167,7 +167,6 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
             // vlan and vlan_pcp) when creating the match.
             // So, we only separate this situation by watching the vlan tag in the match.
             // If it is a value 0xffff, we only see the in_port field. 
-            
         	if ((this.match.getDataLayerVirtualLan() != Ethernet.VLAN_UNTAGGED)) {
 				this.match = this.match.setWildcards(Wildcards.FULL
 						.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
