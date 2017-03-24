@@ -20,6 +20,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Error;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2ParamsType;
 import com.thetransactioncompany.jsonrpc2.JSONRPC2Response;
@@ -31,7 +33,10 @@ import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.datapath.OVXBigSwitch;
 import net.onrc.openvirtex.elements.datapath.OVXSwitch;
 import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
+import net.onrc.openvirtex.elements.datapath.PhysicalSwitchSerializer;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
+import net.onrc.openvirtex.elements.port.PhysicalPortSerializer;
 import net.onrc.openvirtex.exceptions.MissingRequiredField;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.exceptions.SwitchMappingException;
@@ -43,27 +48,42 @@ public class GetVirtualSwitchMapping extends ApiHandler<Map<String, Object>> {
     @Override
     public JSONRPC2Response process(Map<String, Object> params) {
         try {
+        	final GsonBuilder gsonBuilder = new GsonBuilder();
+            // gsonBuilder.setPrettyPrinting();
+            gsonBuilder.excludeFieldsWithoutExposeAnnotation();
+            gsonBuilder.registerTypeAdapter(PhysicalSwitch.class,
+                    new PhysicalSwitchSerializer());
+            gsonBuilder.registerTypeAdapter(PhysicalPort.class,
+                    new PhysicalPortSerializer());
+            
+            final Gson gson = gsonBuilder.create();
+        	
             Map<String, Object> res = new HashMap<String, Object>();
             Number tid = HandlerUtils.<Number>fetchField(
                     MonitoringHandler.TENANT, params, true, null);
             OVXMap map = OVXMap.getInstance();
-            LinkedList<String> list = new LinkedList<String>();
+            //LinkedList<String> list = new LinkedList<String>();
+            LinkedList<Map> list = new LinkedList<Map>();
             HashMap<String, Object> subRes = new HashMap<String, Object>();
             for (OVXSwitch vsw : map.getVirtualNetwork(tid.intValue())
                     .getSwitches()) {
                 subRes.clear();
                 list.clear();
                 if (vsw instanceof OVXBigSwitch) {
-                    List<String> l = new LinkedList<String>();
+//                    List<String> l = new LinkedList<String>();
+                	List<Map> l = new LinkedList<Map>();
                     for (PhysicalLink li : ((OVXBigSwitch) vsw).getAllPrimaryLinks()) {
-                        l.add(li.toString());
+//                        l.add(li.toString());
+                        l.add(gson.fromJson(gson.toJson(li), Map.class));
                     }
                     subRes.put("primarylinks", l);
                     
                     // add the backup paths
-                    l = new LinkedList<String>();
+//                    l = new LinkedList<String>();
+                    l = new LinkedList<Map>();
                     for (PhysicalLink li : ((OVXBigSwitch) vsw).getAllBackupLinks()) {
-                        l.add(li.toString());
+                        //l.add(li.toString());
+                    	l.add(gson.fromJson(gson.toJson(li), Map.class));
                     }
                     subRes.put("backuplinks", l);
                 } else {
@@ -71,12 +91,14 @@ public class GetVirtualSwitchMapping extends ApiHandler<Map<String, Object>> {
                     subRes.put("backuplinks", new LinkedList<>());
                 }
                 for (PhysicalSwitch psw : map.getPhysicalSwitches(vsw)) {
-                    list.add(psw.getSwitchName());
+                    //list.add(psw.getSwitchName());
+                	list.add(gson.fromJson(gson.toJson(psw), Map.class));
                 }
                 subRes.put("switches", list.clone());
-                res.put(vsw.getSwitchName(), subRes.clone());
+                //res.put(vsw.getSwitchName(), subRes.clone());
             }
-            resp = new JSONRPC2Response(res, 0);
+            //resp = new JSONRPC2Response(res, 0);
+            resp = new JSONRPC2Response(subRes, 0);
 
         } catch (ClassCastException | MissingRequiredField
                 | NullPointerException | NetworkMappingException
