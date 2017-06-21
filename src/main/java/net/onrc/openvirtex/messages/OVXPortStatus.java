@@ -28,6 +28,7 @@ import net.onrc.openvirtex.elements.datapath.PhysicalSwitch;
 import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.OVXNetwork;
+import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.LinkPair;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.elements.port.PhysicalPort;
@@ -100,6 +101,14 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                     }
                 }
             }
+            
+            if (isState(OFPortState.OFPPS_STP_LISTEN)
+            		&& ((p.getState() & OFPortState.OFPPS_LINK_DOWN.getValue()) == 1)) 
+            	PhysicalNetwork.getInstance().createLink(pair.getOutLink().getSrcPort(), pair.getOutLink().getDstPort());
+            if ((isReason(OFPortReason.OFPPR_DELETE))
+                            || (isReason(OFPortReason.OFPPR_MODIFY) & isState(OFPortState.OFPPS_LINK_DOWN)))
+            	PhysicalNetwork.getInstance().removeLink(pair.getOutLink().getSrcPort(), pair.getOutLink().getDstPort());
+            
             p.setState(this.desc.getState());
             log.info("Update state[{}] on {}/{}", 
             		this.fromStateCode(this.desc.getState()), 
@@ -143,7 +152,7 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
             LinkPair<PhysicalLink> pair, int tid) throws LinkMappingException,
             NetworkMappingException {
         PhysicalLink plink = pair.getOutLink();
-
+        
         if (!isState(OFPortState.OFPPS_LINK_DOWN)
                 && ((plink.getSrcPort().getState() & OFPortState.OFPPS_LINK_DOWN
                         .getValue()) == 1)) {
