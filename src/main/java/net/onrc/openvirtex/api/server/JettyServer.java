@@ -133,70 +133,69 @@ public class JettyServer implements Runnable {
         // Set the connectors
         this.server.setConnectors(new Connector[] {http, https});
 
-//        final Constraint userConstraint = new Constraint();
-//        userConstraint.setName(Constraint.__BASIC_AUTH);
-//        userConstraint.setRoles(new String[] {"user"});
-//        userConstraint.setAuthenticate(true);
-//
-//        final Constraint adminConstraint = new Constraint();
-//        adminConstraint.setName(Constraint.__BASIC_AUTH);
-//        adminConstraint.setRoles(new String[] {"admin"});
-//        adminConstraint.setAuthenticate(true);
-//
-//        final Constraint uiConstraint = new Constraint();
-//        uiConstraint.setName(Constraint.__BASIC_AUTH);
-//        uiConstraint.setRoles(new String[] {"ui"});
-//        uiConstraint.setAuthenticate(true);
-//
-//        final ConstraintMapping usermapping = new ConstraintMapping();
-//        usermapping.setConstraint(userConstraint);
-//        usermapping.setPathSpec("/tenant");
-//
-//        final ConstraintMapping adminmapping = new ConstraintMapping();
-//        adminmapping.setConstraint(adminConstraint);
-//        adminmapping.setPathSpec("/admin");
-//
-//        final ConstraintMapping uimapping = new ConstraintMapping();
-//        uimapping.setConstraint(uiConstraint);
-//        uimapping.setPathSpec("/status");
-//
-//        final ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
-//        sh.setRealmName(JettyServer.REALM);
-//        sh.setConstraintMappings(new ConstraintMapping[] {usermapping,
-//                adminmapping, uimapping});
-//        sh.setAuthenticator(new BasicAuthenticator());
-//        sh.setHandler(this.service);
-//        final LoginService loginSrv = new OVXLoginService();
-//        sh.setLoginService(loginSrv);
+        final Constraint userConstraint = new Constraint();
+        userConstraint.setName(Constraint.__BASIC_AUTH);
+        userConstraint.setRoles(new String[] {"user"});
+        userConstraint.setAuthenticate(true);
+
+        final Constraint adminConstraint = new Constraint();
+        adminConstraint.setName(Constraint.__BASIC_AUTH);
+        adminConstraint.setRoles(new String[] {"admin"});
+        adminConstraint.setAuthenticate(true);
+
+        final Constraint uiConstraint = new Constraint();
+        uiConstraint.setName(Constraint.__BASIC_AUTH);
+        uiConstraint.setRoles(new String[] {"ui"});
+        uiConstraint.setAuthenticate(true);
+
+        final ConstraintMapping usermapping = new ConstraintMapping();
+        usermapping.setConstraint(userConstraint);
+        usermapping.setPathSpec("/tenant");
+
+        final ConstraintMapping adminmapping = new ConstraintMapping();
+        adminmapping.setConstraint(adminConstraint);
+        adminmapping.setPathSpec("/admin");
+
+        final ConstraintMapping uimapping = new ConstraintMapping();
+        uimapping.setConstraint(uiConstraint);
+        uimapping.setPathSpec("/status");
+
+        final ConstraintSecurityHandler sh = new ConstraintSecurityHandler();
+        sh.setRealmName(JettyServer.REALM);
+        sh.setConstraintMappings(new ConstraintMapping[] {usermapping,
+                adminmapping, uimapping});
+        sh.setAuthenticator(new BasicAuthenticator());
+        sh.setHandler(this.service);
+        final LoginService loginSrv = new OVXLoginService();
+        sh.setLoginService(loginSrv);
+        this.server.setHandler(sh);  
         
-        
-        // Enable CORS in Jetty Server
-        String webDir = JettyServer.class.getResource("/").toExternalForm();
-        WebAppContext webAppContext = new WebAppContext();
-        webAppContext.setResourceBase(webDir);     
-        
-        ServletHandler handler = new ServletHandler();
-        
-        FilterHolder filter = webAppContext.addFilter(CrossOriginFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
-        filter.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "*");
-        filter.setInitParameter(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
-    	filter.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "POST,GET,OPTIONS,PUT,DELETE,HEAD");
-    	filter.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
-    	filter.setInitParameter(CrossOriginFilter.PREFLIGHT_MAX_AGE_PARAM, "728000");
-    	filter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, "true");
-    	CrossOriginFilter corsFilter = new CrossOriginFilter();
-    	filter.setFilter(corsFilter);
-    	
-    	FilterMapping filterMapping = createFilterMapping("/*", filter);
-    	handler.addFilter(filter, filterMapping);
-    	
-    	HandlerCollection handlerCollection = new HandlerCollection();
-    	//handlerCollection.addHandler(handler);
-        //handlerCollection.setHandlers(new Handler[] {sh, handler});
-    	handlerCollection.setHandlers(new Handler[] {this.service, handler});
-    	
-        this.server.setHandler(handlerCollection);
-//        this.server.setHandler(sh);   
+//        // Enable CORS in Jetty Server
+//        String webDir = JettyServer.class.getResource("/").toExternalForm();
+//        WebAppContext webAppContext = new WebAppContext();
+//        webAppContext.setResourceBase(webDir);     
+//        
+//        ServletHandler handler = new ServletHandler();
+//        
+//        FilterHolder filter = webAppContext.addFilter(CrossOriginFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+//        filter.setInitParameter(CrossOriginFilter.ALLOWED_ORIGINS_PARAM, "*");
+//        filter.setInitParameter(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, "*");
+//    	filter.setInitParameter(CrossOriginFilter.ALLOWED_METHODS_PARAM, "POST,GET,OPTIONS,PUT,DELETE,HEAD");
+//    	filter.setInitParameter(CrossOriginFilter.ALLOWED_HEADERS_PARAM, "Content-Type,Authorization,X-Requested-With,Content-Length,Accept,Origin");
+//    	filter.setInitParameter(CrossOriginFilter.PREFLIGHT_MAX_AGE_PARAM, "728000");
+//    	filter.setInitParameter(CrossOriginFilter.ALLOW_CREDENTIALS_PARAM, "true");
+//    	CrossOriginFilter corsFilter = new CrossOriginFilter();
+//    	filter.setFilter(corsFilter);
+//    	
+//    	FilterMapping filterMapping = createFilterMapping("/*", filter);
+//    	handler.addFilter(filter, filterMapping);
+//    	
+//    	HandlerCollection handlerCollection = new HandlerCollection();
+//    	//handlerCollection.addHandler(handler);
+//        //handlerCollection.setHandlers(new Handler[] {sh, handler});
+//    	handlerCollection.setHandlers(new Handler[] {this.service, handler});
+//    	
+//        this.server.setHandler(handlerCollection); 
     }
     
 	private FilterMapping createFilterMapping(String pathSpec,
