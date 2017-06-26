@@ -867,22 +867,24 @@ public final class OVXMap implements Mappable {
 				this.physicalPortMap.get(tenantId);
         if (portMap == null) {
         	portMap = new ConcurrentHashMap<PhysicalPort, Short>();
-            this.physicalPortMap.put(tenantId, portMap);
         }
         portMap.put(port, tag);
+        this.physicalPortMap.put(tenantId, portMap);
 	}
 
 	@Override
 	public Integer getTenantId(PhysicalPort port, Short tag) {
 		Iterator<Integer> it = physicalPortMap.keySet().iterator();
-		Integer tenantId; 
+		Integer tenantId = null; 
 		
 		while (it.hasNext()) {
 			tenantId = it.next();
 			ConcurrentHashMap<PhysicalPort, Short> portMap = physicalPortMap.get(tenantId);
 			Short t = portMap.get(port);
 			if (t != null) {
-				if (tag == t) return tenantId;
+				if (tag.equals(t)) {
+					return tenantId;
+				}
 			}
 		}
 		return null;
