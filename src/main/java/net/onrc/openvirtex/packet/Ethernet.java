@@ -55,6 +55,7 @@ public class Ethernet extends BasePacket {
     public static final short VLAN_UNTAGGED = (short) 0xffff;
     public static final short DATALAYER_ADDRESS_LENGTH = 6; // bytes
     public static Map<Short, Class<? extends IPacket>> etherTypeClassMap;
+    public static final String CDP_HOST = "01:00:0c:cc:cc:cd";
 
     static {
         Ethernet.etherTypeClassMap = new HashMap<Short, Class<? extends IPacket>>();
