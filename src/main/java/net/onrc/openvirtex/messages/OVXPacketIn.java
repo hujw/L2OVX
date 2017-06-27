@@ -51,6 +51,7 @@ import org.openflow.protocol.OFPacketIn;
 import org.openflow.protocol.OFPacketOut;
 import org.openflow.protocol.Wildcards;
 import org.openflow.protocol.Wildcards.Flag;
+import org.openflow.util.HexString;
 import org.openflow.util.U16;
 
 public class OVXPacketIn extends OFPacketIn implements Virtualizable {
@@ -152,6 +153,13 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			 */
 			vSwitch = this.fetchOVXSwitch(sw, vSwitch, map);
 			this.ovxPort = this.port.getOVXPort(this.tenantId, 0);
+			
+			// Filter the CDP packets
+			if (Arrays.equals(match.getDataLayerDestination(), 
+					HexString.fromHexString(Ethernet.CDP_HOST))) {
+				return;
+			}
+			
 			if (match.getDataLayerType() != Ethernet.TYPE_LLDP){
 				// hujw 
 				// Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
