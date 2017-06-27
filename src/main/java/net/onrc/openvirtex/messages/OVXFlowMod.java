@@ -19,6 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.core.OpenVirteXController;
 import net.onrc.openvirtex.elements.address.IPMapper;
@@ -29,6 +30,7 @@ import net.onrc.openvirtex.elements.link.OVXLink;
 import net.onrc.openvirtex.elements.link.OVXLinkField;
 import net.onrc.openvirtex.elements.link.OVXLinkUtils;
 import net.onrc.openvirtex.elements.port.OVXPort;
+import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.ActionVirtualizationDenied;
 import net.onrc.openvirtex.exceptions.DroppedMessageException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
@@ -164,6 +166,14 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
 
         } else {
         	
+            ConcurrentHashMap<PhysicalPort, Short> pairPortTag = 
+    				(ConcurrentHashMap<PhysicalPort, Short>) 
+    				sw.getMap().getPortTagPair(sw.getTenantId());
+            Short tag = pairPortTag.get(ovxInPort.getPhysicalPort());
+            if ((tag != null) && (tag.shortValue() != Ethernet.VLAN_UNTAGGED)) {
+            	this.match.setDataLayerVirtualLan(tag.shortValue());
+            }
+        	
             // hujw 
             // Brocade 6610 do not support the empty vlan tag = -1 (e.g., 0xffff). They think
             // if you do not consider vlan, then you just remove any vlan fields (e.g., 
@@ -194,6 +204,7 @@ public class OVXFlowMod extends OFFlowMod implements Devirtualizable {
                     sw.getSwitchName());
             return;
         }
+        
         this.getMatch().setInputPort(inPort.getPhysicalPortNumber());
         OVXMessageUtil.translateXid(this, inPort);
         try {
