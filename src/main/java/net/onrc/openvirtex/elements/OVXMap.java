@@ -897,7 +897,11 @@ public final class OVXMap implements Mappable {
 		if (portMap != null) {
 			Short t = portMap.get(port);
 			if (t != null) {
-				if (tag == t) portMap.remove(port);
+				if (tag.equals(t)) {
+					portMap.remove(port);
+					this.physicalPortMap.put(tenantId, portMap);
+					
+				}
 			}
 		}
 	}
