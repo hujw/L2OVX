@@ -425,7 +425,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         	bb.position(lldp.getPortId().getLength()-2);
         	short portNum = bb.getShort();
         	
-            this.log.warn("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
+            this.log.debug("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
             		HexString.toHexString(dstPort.getParentSwitch().getSwitchId()), 
             		pi.getInPort(), chassisId, portNum);
 

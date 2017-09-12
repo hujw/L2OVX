@@ -143,8 +143,8 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
      */
     @Override
     public void tearDown() {
-        PhysicalSwitch.log.info("Switch disconnected {} ",
-                this.featuresReply.getDatapathId());
+        PhysicalSwitch.log.info("Switch disconnected {}, name {} ",
+                this.featuresReply.getDatapathId(), this.getSwitchName());
         this.statsMan.stop();
         this.channel.disconnect();
         this.map.removePhysicalSwitch(this);
