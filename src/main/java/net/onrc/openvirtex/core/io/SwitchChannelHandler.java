@@ -212,10 +212,12 @@ public class SwitchChannelHandler extends OFChannelHandler {
                 final OFStatistics f = m.getFirstStatistics();
                 f.writeTo(data);
                 description.readFrom(data);
-                OFFlowMod fm = new OFFlowMod();
-                fm.setCommand(OFFlowMod.OFPFC_DELETE);
-                fm.setMatch(new OFMatch());
-                h.channel.write(Collections.singletonList(fm));
+                // modified by hujw
+                // Do not remove flows when L2OVX restarts
+//                OFFlowMod fm = new OFFlowMod();
+//                fm.setCommand(OFFlowMod.OFPFC_DELETE);
+//                fm.setMatch(new OFMatch());
+//                h.channel.write(Collections.singletonList(fm));
                 h.sw = new PhysicalSwitch(h.featuresReply.getDatapathId());
                 // set switch information
                 // set features reply and channel first so we have a DPID and
