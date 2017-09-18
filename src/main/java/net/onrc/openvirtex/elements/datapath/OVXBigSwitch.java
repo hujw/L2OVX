@@ -41,6 +41,7 @@ import net.onrc.openvirtex.messages.OVXPacketOut;
 import net.onrc.openvirtex.messages.actions.OVXActionStripVirtualLan;
 import net.onrc.openvirtex.messages.actions.OVXActionVirtualLanIdentifier;
 import net.onrc.openvirtex.messages.statistics.OVXFlowStatisticsReply;
+import net.onrc.openvirtex.packet.ARP;
 import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.routing.RoutingAlgorithms;
 import net.onrc.openvirtex.routing.RoutingAlgorithms.RoutingType;
@@ -535,12 +536,16 @@ public class OVXBigSwitch extends OVXSwitch {
     	OFMatch match = new OFMatch();
         // Set match filter
         match.setWildcards(Wildcards.FULL
-				.matchOn(Flag.IN_PORT)
+				.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE)
 				.matchOn(Flag.DL_VLAN));//.matchOn(Flag.DL_VLAN_PCP));
         
         return match;
     }
     
+    /**
+     * Pre-install the flows into switches.
+     * @param sr
+     */
     private void writeFlowMod(SwitchRoute sr) {
         OVXPort srcPort = sr.getSrcPort();
         OVXPort dstPort = sr.getDstPort();
@@ -559,7 +564,7 @@ public class OVXBigSwitch extends OVXSwitch {
         // Record the OVXFlowMod in the flowtable of OVXSwitch
 //        srcPort.getParentSwitch().getFlowTable().handleFlowMods(ovxfm);
         ((OVXFlowTable)this.flowTable).addFlowMod(ovxfm, newc);
-        log.info(srcPort.getParentSwitch().getFlowTable().getFlowTable().size());
+        log.debug("Flow table count: {}", srcPort.getParentSwitch().getFlowTable().getFlowTable().size());
         // end
         
         OVXFlowMod fm = null;
@@ -598,6 +603,7 @@ public class OVXBigSwitch extends OVXSwitch {
 					
 					match = createMatch();
 					match.setInputPort(srcPort.getPhysicalPort().getPortNumber());
+					match.setDataLayerType(ARP.PROTO_TYPE_IP);
 					if (srcPort.getPortTag() != Ethernet.VLAN_UNTAGGED) {
 						match.setDataLayerVirtualLan(srcPort.getPortTag().shortValue());
 						
@@ -607,7 +613,9 @@ public class OVXBigSwitch extends OVXSwitch {
 						// the value of VLAN field set to 0xFFFF when the packet 
 						// is untagged. 
 						match.setWildcards(Wildcards.FULL
-								.matchOn(Flag.IN_PORT));
+								.matchOn(Flag.IN_PORT).matchOn(Flag.DL_TYPE));
+//								.matchOn(Flag.DL_SRC).matchOn(Flag.DL_DST)
+//								.matchOn(Flag.DL_VLAN).matchOn(Flag.DL_VLAN_PCP));
 						
 					}
 					fm.setMatch(match);
@@ -636,6 +644,7 @@ public class OVXBigSwitch extends OVXSwitch {
 					
 					match = createMatch();
 					match.setInputPort(inPort.getPortNumber())
+							.setDataLayerType(ARP.PROTO_TYPE_IP)
 							.setDataLayerVirtualLan(this.tenantId.shortValue());
 					fm.setMatch(match);
 					
