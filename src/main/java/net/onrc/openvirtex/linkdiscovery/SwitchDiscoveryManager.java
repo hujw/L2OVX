@@ -241,6 +241,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         final short alen = SwitchDiscoveryManager.countActionsLen(actionsList);
         this.lldpPacket.setPort(port);
         this.ethPacket.setSourceMACAddress(port.getHardwareAddress());
+        // modified by hujw 
         // For new VPLS equipments
         this.ethPacket.setVlanID((short)1);
         
@@ -425,7 +426,7 @@ public class SwitchDiscoveryManager implements LLDPEventHandler, OVXSendMsg,
         	bb.position(lldp.getPortId().getLength()-2);
         	short portNum = bb.getShort();
         	
-            this.log.warn("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
+            this.log.debug("Ignoring unknown LLDP on {}/{} - Chassis TLV {}, Port TLV {}", 
             		HexString.toHexString(dstPort.getParentSwitch().getSwitchId()), 
             		pi.getInPort(), chassisId, portNum);
 

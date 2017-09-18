@@ -896,11 +896,14 @@ public final class OVXMap implements Mappable {
 		ConcurrentHashMap<PhysicalPort, Short> portMap = 
 				this.physicalPortMap.get(tenantId);
 		
-		Iterator<PhysicalPort> it = portMap.keySet().iterator();
-		while (it.hasNext()) {
-			PhysicalPort p = it.next();
-			ports.add(p);
+		if (portMap != null) {
+			Iterator<PhysicalPort> it = portMap.keySet().iterator();
+			while (it.hasNext()) {
+				PhysicalPort p = it.next();
+				ports.add(p);
+			}
 		}
+		
 		return ports;
 	}
 	

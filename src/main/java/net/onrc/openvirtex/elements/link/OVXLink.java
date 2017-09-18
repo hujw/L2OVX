@@ -226,7 +226,7 @@ public class OVXLink extends Link<OVXPort, OVXSwitch> {
     public void unregister() {
 
         try {
-            DBManager.getInstance().remove(this);
+//            DBManager.getInstance().remove(this);
             this.tearDown();
             map.removeVirtualLink(this);
             map.getVirtualNetwork(this.tenantId).removeLink(this);

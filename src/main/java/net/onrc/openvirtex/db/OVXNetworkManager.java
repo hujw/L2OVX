@@ -337,9 +337,11 @@ public class OVXNetworkManager {
                         .shortValue();
                 short vportNumber = ((Integer) port.get(TenantHandler.VPORT))
                         .shortValue();
+                short tag = ((Integer) port.get(TenantHandler.PORT_TAG))
+                        .shortValue();
                 try {
                     virtualNetwork.createPort(physicalDpid, portNumber,
-                            vportNumber);
+                    		tag, vportNumber);
                     // Start this OVX port
                     if (linkField == OVXLinkField.VLAN) {
                     	if (mapDpid.containsKey(physicalDpid)) {

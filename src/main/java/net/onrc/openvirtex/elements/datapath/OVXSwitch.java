@@ -260,7 +260,7 @@ public abstract class OVXSwitch extends Switch<OVXPort> implements Persistable {
      * and removes all virtual elements that rely on this switch.
      */
     public void unregister() {
-        DBManager.getInstance().remove(this);
+//        DBManager.getInstance().remove(this);
         this.isActive = false;
         if (this.getPorts() != null) {
             OVXNetwork net;

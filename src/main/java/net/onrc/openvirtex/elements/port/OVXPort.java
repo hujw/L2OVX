@@ -222,7 +222,8 @@ public class OVXPort extends Port<OVXSwitch, OVXLink> implements Persistable {
     }
 
     public void unregister() {
-        DBManager.getInstance().remove(this);
+    	// Do not need to update the tenant's info in DB
+//        DBManager.getInstance().remove(this);
         OVXNetwork virtualNetwork = null;
         try {
             virtualNetwork = this.parentSwitch.getMap().getVirtualNetwork(
