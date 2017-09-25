@@ -304,7 +304,7 @@ public class OVXActionOutput extends OFActionOutput implements
             					(ConcurrentHashMap<PhysicalPort, Short>) 
             					sw.getMap().getPortTagPair(sw.getTenantId());
                         Short tag = pairPortTag.get(dstPort);
-                        if (tag.shortValue() != Ethernet.VLAN_UNTAGGED) {
+                        if ((tag != null) && (tag.shortValue() != Ethernet.VLAN_UNTAGGED)) {
                     		Ethernet newPkt = new Ethernet();
                     		newPkt.deserialize(match.getPktData(), 0,
                     				match.getPktData().length);

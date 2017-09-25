@@ -96,6 +96,7 @@ public class OVXPacketIn extends OFPacketIn implements Virtualizable {
 			
 			// for SDX, getting the tenant id by port and its tag
 			this.tenantId = map.getTenantId(port, match.getDataLayerVirtualLan());
+			if (this.tenantId == null) return;
 			
 			// modify by hujw
 			// untag all packet before sending to corresponding controller. 
