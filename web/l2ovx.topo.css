@@ -1,0 +1,52 @@
+.link {
+    stroke: #090909;
+    stroke-opacity: .6;
+    stroke-width: 2px;
+}
+
+.node circle {
+  stroke: #fff;
+  opacity: 0.9;
+  stroke-width: 1.5px;
+}
+
+.node:not(:hover) .nodetext {
+  display: none;
+}
+
+.node.fixed {
+  fill: #C0C0C0;
+}
+
+.node text {
+    font-size: 14px;
+}
+
+.port circle {
+    stroke: black;
+    fill: #C5F9F9;
+}
+
+.port rect {
+    stroke: black;
+    fill: #C5F9F9;
+}
+
+.port text {
+    font-size: 10px;
+}
+
+text {
+  font: 7px serif;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.d3-tip {
+  line-height: 1;
+  font-weight: bold;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  color: #fff;
+  border-radius: 2px;
+}

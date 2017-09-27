@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>L2OVX</title>
+	<script src="http://d3js.org/d3.v3.min.js"></script>
+	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
+	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
+    <script type="text/javascript" src="http://w2ui.com/src/w2ui-1.5.rc1.min.js"></script>
+	<script src="ajax.js"></script>
+	<script src="utils.js"></script>
+	
+	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css" media="all">
+	<link rel="stylesheet" type="text/css" href="http://w2ui.com/src/w2ui-1.5.rc1.min.css" />
+	<link rel="stylesheet" type="text/css" href="l2ovx.topo.css">
+	<link rel="stylesheet" type="text/css" href="table.css">
+</head>
+
+<body>
+<h3>L2OVX Topology Viewer</h3>
+	<script src="l2ovx.topo.js"></script>
+	<script src="l2ovx.flows.js"></script>
+	<script src="l2ovx.log.js"></script>
+	
+	<div id="myLayout" style="height: 800px"></div>
+	
+	<script>
+	$(function () {
+
+		var pstyle = 'background-color: #F5F6F7; border: 1px solid #dfdfdf; padding: 5px;';
+		$('#myLayout').w2layout({
+			name: 'myLayout',
+			panels: [
+				//{ type: 'top',  size: 50, resizable: true, style: pstyle, content: top_title },
+				{ type: 'left', size: 200, resizable: true, style: pstyle, content: 'left' },
+				{ type: 'main', 
+					style: pstyle, 
+					content: topology,
+					//tabs: {
+					//	active: 'tab1',
+					//	tabs: [
+					//		{ id: 'tab1', caption: 'Tab 1' },
+					//		{ id: 'tab2', caption: 'Tab 2' },
+					//		{ id: 'tab3', caption: 'Tab 3' },
+					//		{ id: 'tab4', caption: 'Tab 4' }
+					//	],
+					//	onClick: function (id, data) {
+					//		console.log(id);
+					//	}
+					//}
+				},
+				// tableDiv1 from flows.js
+				{ type: 'preview', size: '30%', resizable: true, style: pstyle, content: tableDiv1 },
+				//{ type: 'right', size: 200, resizable: true, style: pstyle, content: 'right' },
+				{ type: 'bottom', size: 50, resizable: true, style: pstyle, 
+					content: '<textarea id="logContent" width="100%" height="100%">123</textarea>' }
+			]
+		}); 
+	});
+
+	</script>
+</body>
+</html>

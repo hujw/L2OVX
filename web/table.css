@@ -1,0 +1,25 @@
+.well {
+	padding-top: 0px;
+	padding-bottom: 0px;
+	width: 500px;
+}
+table {
+	font-size: 10px;
+	line-height: 10px;
+}
+td, th {
+	width: 33.3%;
+}
+label {
+	margin-bottom: 10px;
+}
+
+textarea {
+padding: 0;
+width: 100%;
+box-sizing: border-box;
+height: 300px;
+border: 1px solid #E1E100;
+background: #F5FFFA;
+overflow: auto;
+}

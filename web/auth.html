@@ -1,0 +1,81 @@
+<html>
+    <head>
+	<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.7.2/jquery.js"></script>
+	<script type="text/javascript" src="ajax.js"></script>
+	<script type="text/javascript" src=http://d3js.org/d3.v3.min.js></script>
+	<script type="text/javascript">
+		function make_basic_auth(user, password) {
+		  var tok = user + ':' + password;
+		  var hash = btoa(tok);
+		  return "Basic " + hash;
+		}
+		
+		var username = 'admin';
+		var password = 'admin';
+		var auth = make_basic_auth(username, password);
+		var url = "http://211.79.63.108:8080/status";
+		
+		/*
+        var httpRequest = null;
+
+        function SendRequest () {
+            if (!httpRequest) {
+                httpRequest = CreateHTTPRequestObject ();   // defined in ajax.js
+            }
+            if (httpRequest) {          
+                    // The requested file must be in the same domain that the page is served from.
+                httpRequest.open ("GET", url, true);    // async
+                httpRequest.setRequestHeader('Authorization', auth);
+                httpRequest.onreadystatechange = OnStateChange;
+                httpRequest.send (null);
+            }
+        }
+
+        function OnStateChange () {
+            if (httpRequest.readyState == 0 || httpRequest.readyState == 4) {
+                if (IsRequestSuccessful (httpRequest)) {    // defined in ajax.js
+                    alert ("Request complete.");
+                }
+                else {
+                    alert ("Operation failed.");
+                }
+            }
+        }*/
+		
+		
+		$.ajax({
+			url: url,
+			//beforeSend: function (xhr) {
+			//	xhr.withCredentials = true;
+			//	xhr.setRequestHeader("Authorization", "Basic " + window.btoa(unescape(encodeURIComponent(username + ":" + password))));
+			//},
+			type: 'POST',
+			dataType: 'json',
+			//contentType: "application/json",
+			data: '{"jsonrpc": "2.0", "method": "getPhysicalFlowtable", "params": {}, "id": 1}',
+			
+			error : function() {
+			},
+			success: function(data) {
+				//var jsondata = JSON.stringify(data.result);
+				var switches = data.result;
+				for (var dpid in switches) {
+					if (switches[dpid].length > 0) { 
+						for (var f in switches[dpid])
+							console.log("[" + dpid + "]: " +
+								"[match]-" + JSON.stringify(switches[dpid][f].match) + 
+								", [actions]-" + JSON.stringify(switches[dpid][f].actionsList)
+							);
+					}
+				}
+			}
+		})
+		.done(function(){
+			//alert('Authenticated!')
+		})
+		.fail(function(){
+			alert('Error!')
+		});
+		
+	</script>
+</html>
