@@ -80,6 +80,7 @@ import org.openflow.util.U8;
 public class SwitchRoute extends Link<OVXPort, PhysicalSwitch> implements
         Persistable {
     private static Logger log = LogManager.getLogger(SwitchRoute.class.getName());
+    private static Logger weblog = LogManager.getLogger("web-display-log");
     /**
      * Database keyword for switch routes.
      */

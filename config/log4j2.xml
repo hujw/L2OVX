@@ -19,9 +19,20 @@
 				<SizeBasedTriggeringPolicy size="10 MB" />
 			</Policies>
 		</RollingFile>
+		<RollingFile name="web-display-log" fileName="web/web-display.log"
+			filePattern="web-display-%d{MM-dd-yyyy}-%i.log">
+			<PatternLayout pattern='{"date": "%d{yyy-MM-dd HH:mm:ss}", "level": "%p", "event":"%msg"}%n' />
+			<Policies>
+				<TimeBasedTriggeringPolicy />
+				<SizeBasedTriggeringPolicy size="10 MB" />
+			</Policies>
+		</RollingFile>
 	</appenders>
 	<loggers>
-		<root level="TRACE" includeLocation="false">
+		<Logger name="web-display-log" level="debug" additivity="false">       
+        	<appender-ref ref="web-display-log" level="debug"/>
+   		</Logger>
+		<root level="TRACE" includeLocation="false" additivity="false">
 			<appender-ref ref="Console" level="INFO" />
 			<appender-ref ref="RollingFile" level="INFO" />
 		</root>

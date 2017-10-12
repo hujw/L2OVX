@@ -35,6 +35,7 @@ import net.onrc.openvirtex.elements.port.PhysicalPort;
 import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
 import net.onrc.openvirtex.routing.SwitchRoute;
+import net.onrc.openvirtex.util.OVXStatus;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -44,6 +45,7 @@ import org.openflow.protocol.OFPortStatus;
 public class OVXPortStatus extends OFPortStatus implements Virtualizable {
 
     private final Logger log = LogManager.getLogger(OVXPortStatus.class);
+    private final Logger weblog = LogManager.getLogger("web-display-log");
 
     @Override
     public void virtualize(final PhysicalSwitch sw) {
@@ -113,6 +115,9 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
             log.info("Update state[{}] on {}/{}", 
             		this.fromStateCode(this.desc.getState()), 
             		p.getParentSwitch().getName(), p.getPortNumber());
+            weblog.warn("Update state[{}] on {}/{}", 
+            		this.fromStateCode(this.desc.getState()), 
+            		p.getParentSwitch().getName(), p.getPortNumber());
             
         } catch (NetworkMappingException | LinkMappingException e) {
             log.warn("Couldn't process reason={} for PortStatus for port {}",
@@ -157,6 +162,8 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                 && ((plink.getSrcPort().getState() & OFPortState.OFPPS_LINK_DOWN
                         .getValue()) == 1)) {
 //        	log.info("reason: {}, state: {}, {}", this.reason, this.desc.getState(), plink.getSrcPort().getState());
+        	weblog.info("Port {}/{} is up!", sw.getSwitchName(), plink.getSrcPort().getPortNumber());
+        	weblog.info("Link {} is up!", plink);
             OVXNetwork net = map.getVirtualNetwork(tid);
             for (OVXLink link : net.getLinks()) {
                 link.tryRevert(plink);
@@ -167,6 +174,7 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                             .getRouteMap().values()) {
                         for (SwitchRoute route : routeMap.values()) {
                             route.tryRevert(plink);
+                            map.getVirtualNetwork(tid).updateStatus(OVXStatus.UP, OVXStatus.LINK_UP);
                         }
                     }
                 }
@@ -217,8 +225,13 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                 if ((isReason(OFPortReason.OFPPR_DELETE))
                         || (isReason(OFPortReason.OFPPR_MODIFY) & isState(OFPortState.OFPPS_LINK_DOWN))) {
 //                	log.info("reason: {}, state: {}", this.reason, this.desc.getState());
+                	weblog.info("Port {}/{} is down!", sw.getSwitchName(), plink.getSrcPort().getPortNumber());
+                	weblog.warn("Link {} is down!", plink);
                     if (!route.tryRecovery(plink)) {
                         route.getSrcPort().handleRouteDisable(this);
+                        map.getVirtualNetwork(tid).updateStatus(OVXStatus.ERROR, OVXStatus.LINK_DOWN);
+                    } else {
+                    	map.getVirtualNetwork(tid).updateStatus(OVXStatus.WARN, OVXStatus.SWITCH_TO_BACKUP);
                     }
                 }
             }

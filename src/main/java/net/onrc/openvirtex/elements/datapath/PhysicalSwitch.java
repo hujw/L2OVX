@@ -50,6 +50,7 @@ import org.openflow.protocol.statistics.OFStatistics;
 public class PhysicalSwitch extends Switch<PhysicalPort> {
 
     private static Logger log = LogManager.getLogger(PhysicalSwitch.class.getName());
+    private final Logger weblog = LogManager.getLogger("web-display-log");
     // The Xid mapper
     private final XidTranslator<OVXSwitch> translator;
     private StatisticsManager statsMan = null;
@@ -145,6 +146,8 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
     public void tearDown() {
         PhysicalSwitch.log.info("Switch disconnected {}, name {} ",
                 this.featuresReply.getDatapathId(), this.getSwitchName());
+        weblog.info("Switch {} disconnected (dpid: {})", 
+        		this.getSwitchName(), this.featuresReply.getDatapathId());
         this.statsMan.stop();
         this.channel.disconnect();
         this.map.removePhysicalSwitch(this);
@@ -196,6 +199,9 @@ public class PhysicalSwitch extends Switch<PhysicalPort> {
         PhysicalSwitch.log.info("Switch connected with dpid {}, name {} and type {}",
                 this.featuresReply.getDatapathId(), this.getSwitchName(),
                 this.desc.getHardwareDescription());
+        weblog.info("Switch {} connected (type: {}, dpid: {})", 
+        		this.getSwitchName(), this.desc.getHardwareDescription(), 
+        		this.featuresReply.getDatapathId());
         PhysicalNetwork.getInstance().addSwitch(this);
         this.fillPortMap();
         this.statsMan.start();
