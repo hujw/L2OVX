@@ -74,8 +74,8 @@ public class CreateOVXPort extends ApiHandler<Map<String, Object>> {
             if (ovxPort == null) {
                 resp = new JSONRPC2Response(
                         new JSONRPC2Error(
-                                JSONRPC2Error.INTERNAL_ERROR.getCode(),
-                                this.cmdName()), 0);
+                                JSONRPC2Error.INTERNAL_ERROR.getCode(), this.cmdName()
+                                + ": Port with vlan tag is already assigned : "), 0);
             } else {
                 this.log.info(
                         "Created virtual port {} with tag {} on virtual switch {} in virtual network {}",
