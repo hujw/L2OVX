@@ -46,6 +46,7 @@ import net.onrc.openvirtex.util.MACAddress;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.w3c.dom.stylesheets.LinkStyle;
 
 import com.googlecode.concurrenttrees.radix.ConcurrentRadixTree;
 import com.googlecode.concurrenttrees.radix.RadixTree;
@@ -73,6 +74,7 @@ public final class OVXMap implements Mappable {
     private RadixTree<ConcurrentHashMap<Integer, PhysicalIPAddress>> virtualIPMap;
     private RadixTree<Integer> macMap;
     private ConcurrentHashMap<Integer, ConcurrentHashMap<PhysicalPort, Short>> physicalPortMap;
+    private ConcurrentHashMap<PhysicalPort, HashSet<Integer>> physicalPortTenantSet;
 
     /**
      * Creates a new map instance, by initializing all mapping data structures.
@@ -92,6 +94,7 @@ public final class OVXMap implements Mappable {
         this.macMap = new ConcurrentRadixTree<Integer>(
                 new DefaultCharArrayNodeFactory());
         this.physicalPortMap = new ConcurrentHashMap<Integer, ConcurrentHashMap<PhysicalPort, Short>>();
+        this.physicalPortTenantSet = new ConcurrentHashMap<PhysicalPort, HashSet<Integer>>();
     } 
 
     /**
@@ -870,6 +873,13 @@ public final class OVXMap implements Mappable {
         }
         portMap.put(port, tag);
         this.physicalPortMap.put(tenantId, portMap);
+        
+        HashSet<Integer> tenantSet = this.physicalPortTenantSet.get(port);
+        if (tenantSet == null) {
+        	tenantSet = new HashSet<Integer>();
+        }
+        tenantSet.add(tenantId);
+        this.physicalPortTenantSet.put(port, tenantSet);
 	}
 
 	@Override
@@ -904,6 +914,12 @@ public final class OVXMap implements Mappable {
 				}
 			}
 		}
+		
+		HashSet<Integer> tenantSet = this.physicalPortTenantSet.get(port);
+		if (tenantSet != null) {
+        	tenantSet.remove(tenantId);
+        }
+		this.physicalPortTenantSet.put(port, tenantSet);
 	}
 	
 	@Override
