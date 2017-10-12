@@ -49,6 +49,7 @@ import net.onrc.openvirtex.exceptions.PortMappingException;
 import net.onrc.openvirtex.exceptions.RoutingAlgorithmException;
 import net.onrc.openvirtex.messages.OVXPacketIn;
 import net.onrc.openvirtex.messages.OVXPacketOut;
+import net.onrc.openvirtex.packet.Ethernet;
 import net.onrc.openvirtex.routing.RoutingAlgorithms;
 import net.onrc.openvirtex.routing.SwitchRoute;
 import net.onrc.openvirtex.util.BitSetIndex;
@@ -89,6 +90,8 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
     private final BitSetIndex hostCounter;
     private final Map<OVXPort, Host> hostMap;
     private final OVXFlowManager flowManager;
+    private String status;
+    private String statusDetails;
     
     private final OVXLinkField linkField = OpenVirteXController.getInstance()
             .getOvxLinkField();
@@ -120,6 +123,8 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
         this.hostMap = new HashMap<OVXPort, Host>();
         this.flowManager = new OVXFlowManager(this.tenantId,
                 this.hostMap.values());
+        this.status = "";
+        this.statusDetails = "";
     }
 
     /**
@@ -250,6 +255,20 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
         }
         this.isBooted = false;
     }
+    
+    public void updateStatus(String status, String details) {
+    	this.status = status;
+    	this.statusDetails = details;
+    }
+    
+    public String getStatus() {
+    	return this.status;
+    }
+    
+    public String getStatusDetails() {
+    	return this.statusDetails;
+    }
+    
 
     // API-facing methods
 
@@ -323,7 +342,9 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
         final PhysicalSwitch physicalSwitch = PhysicalNetwork.getInstance()
                 .getSwitch(physicalDpid);
         final PhysicalPort physicalPort = physicalSwitch.getPort(portNumber); 
-		boolean isExist = OVXMap.getInstance()
+        tag = (tag > 0 && tag < 4095) ? tag : Ethernet.VLAN_UNTAGGED;
+		
+        boolean isExist = OVXMap.getInstance()
 				.getTenantId(physicalPort, tag) == null ? false : true;
         if (physicalPort != null && 
         		(linkField == OVXLinkField.VLAN) && 
