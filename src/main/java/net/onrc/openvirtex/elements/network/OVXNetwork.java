@@ -56,6 +56,7 @@ import net.onrc.openvirtex.util.BitSetIndex;
 import net.onrc.openvirtex.util.BitSetIndex.IndexType;
 import net.onrc.openvirtex.util.MACAddress;
 import net.onrc.openvirtex.util.OVXFlowManager;
+import net.onrc.openvirtex.util.OVXStatus;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -123,8 +124,8 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
         this.hostMap = new HashMap<OVXPort, Host>();
         this.flowManager = new OVXFlowManager(this.tenantId,
                 this.hostMap.values());
-        this.status = "";
-        this.statusDetails = "";
+        this.status = OVXStatus.ERROR;
+        this.statusDetails = OVXStatus.NOT_BOOTED;
     }
 
     /**
@@ -657,6 +658,11 @@ public class OVXNetwork extends Network<OVXSwitch, OVXPort, OVXLink> implements
             result &= sw.boot();
         }
         this.isBooted = result;
+        if (result) {
+        	this.updateStatus(OVXStatus.UP, OVXStatus.BOOTED);
+        } else {
+        	this.updateStatus(OVXStatus.ERROR, OVXStatus.NOT_BOOTED);
+        }
         return this.isBooted;
     }
 

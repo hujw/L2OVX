@@ -115,7 +115,7 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
             log.info("Update state[{}] on {}/{}", 
             		this.fromStateCode(this.desc.getState()), 
             		p.getParentSwitch().getName(), p.getPortNumber());
-            weblog.warn("Update state[{}] on {}/{}", 
+            weblog.info("Update state[{}] on {}/{}", 
             		this.fromStateCode(this.desc.getState()), 
             		p.getParentSwitch().getName(), p.getPortNumber());
             
@@ -162,7 +162,6 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                 && ((plink.getSrcPort().getState() & OFPortState.OFPPS_LINK_DOWN
                         .getValue()) == 1)) {
 //        	log.info("reason: {}, state: {}, {}", this.reason, this.desc.getState(), plink.getSrcPort().getState());
-        	weblog.info("Port {}/{} is up!", sw.getSwitchName(), plink.getSrcPort().getPortNumber());
         	weblog.info("Link {} is up!", plink);
             OVXNetwork net = map.getVirtualNetwork(tid);
             for (OVXLink link : net.getLinks()) {
@@ -173,8 +172,12 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                     for (Map<OVXPort, SwitchRoute> routeMap : ((OVXBigSwitch) ovxSw)
                             .getRouteMap().values()) {
                         for (SwitchRoute route : routeMap.values()) {
-                            route.tryRevert(plink);
-                            map.getVirtualNetwork(tid).updateStatus(OVXStatus.UP, OVXStatus.LINK_UP);
+                            if (route.tryRevert(plink)) {
+                            	if (route.getUnusableRoutesSize() == 0)
+                            		map.getVirtualNetwork(tid).updateStatus(OVXStatus.UP, OVXStatus.LINK_UP);
+                            	else
+                            		map.getVirtualNetwork(tid).updateStatus(OVXStatus.WARN, OVXStatus.SWITCH_TO_BACKUP);
+                            }
                         }
                     }
                 }
@@ -225,7 +228,6 @@ public class OVXPortStatus extends OFPortStatus implements Virtualizable {
                 if ((isReason(OFPortReason.OFPPR_DELETE))
                         || (isReason(OFPortReason.OFPPR_MODIFY) & isState(OFPortState.OFPPS_LINK_DOWN))) {
 //                	log.info("reason: {}, state: {}", this.reason, this.desc.getState());
-                	weblog.info("Port {}/{} is down!", sw.getSwitchName(), plink.getSrcPort().getPortNumber());
                 	weblog.warn("Link {} is down!", plink);
                     if (!route.tryRecovery(plink)) {
                         route.getSrcPort().handleRouteDisable(this);

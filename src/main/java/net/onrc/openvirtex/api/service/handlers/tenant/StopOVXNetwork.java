@@ -26,6 +26,7 @@ import net.onrc.openvirtex.elements.network.OVXNetwork;
 import net.onrc.openvirtex.exceptions.InvalidTenantIdException;
 import net.onrc.openvirtex.exceptions.MissingRequiredField;
 import net.onrc.openvirtex.exceptions.NetworkMappingException;
+import net.onrc.openvirtex.util.OVXStatus;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -56,6 +57,7 @@ public class StopOVXNetwork extends ApiHandler<Map<String, Object>> {
 
             virtualNetwork.stop();
             this.log.info("Stop virtual network {}", tenantId);
+            virtualNetwork.updateStatus(OVXStatus.ERROR, OVXStatus.NOT_BOOTED);
             
             RemoveFlows rf = new RemoveFlows();
             rf.process(params);
