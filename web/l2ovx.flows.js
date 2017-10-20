@@ -26,7 +26,7 @@ var taskButton = header.append("button")
 					})
  */
 // container for array of tables
-var tableDiv = d3.select("body").append("div")
+var tableDiv = d3.select(".d3-tip").append("div")
 					.attr("id", "tableDiv1");
 					
 var taskButton = tableDiv.append("button")
@@ -89,14 +89,28 @@ function task0(selected_dpid = "") {
 			var match = "";
 			var actions = "";
 			
+			for (var f in switches[dpid]) {
+				match = JSON.stringify(switches[dpid][f].match,replacer);
+				actions = JSON.stringify(switches[dpid][f].actionsList,replacer);
+				
+				tableData[0].rows.push({ 
+					recid: index, 
+					//dpid: dpid, 
+					match: match, 
+					actions: actions 
+				});
+				index++;
+			}
+			
+			/*
 			if (switches[dpid].length > 0) {
 				for (var f in switches[dpid]) {
 					match = match.concat(JSON.stringify(switches[dpid][f].match,replacer) + '\n');
 					actions = actions.concat(JSON.stringify(switches[dpid][f].actionsList,replacer) + '\n');
 				}	
 				tableData[0].rows.push({ 
-					id: index, 
-					dipd: dpid, 
+					recid: index, 
+					dpid: dpid, 
 					match: match, 
 					actions: actions 
 				});
@@ -104,21 +118,24 @@ function task0(selected_dpid = "") {
 				
 			} else {
 				tableData[0].rows.push({ 
-					id: index, 
-					dipd: dpid, 
+					recid: index, 
+					dpid: dpid, 
 					match: match, 
 					actions: actions 
 				});
 				index++;
-			}
+			}*/
 			
 		}
-		update(tableData); 
+		update(tableData);	
+		w2ui['node-grid'].records = tableData[0].rows;
+		openPopup(selected_dpid);
 	  }
   });
 
   //taskLabel.text("Step 1: Initial tables loaded");
   //taskButton.text("Next step: ");
+  
 }
 
 function replacer(key, value) {

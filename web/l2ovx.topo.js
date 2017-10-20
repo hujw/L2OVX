@@ -6,6 +6,8 @@ var CONF = {
 };
 
 var width = 800, height = 600;
+width = window.innerWidth;
+height = window.innerHeight;
 var dist = 200, charge = -300;
 var sw_position_content;
 
@@ -18,15 +20,14 @@ var tip = d3.tip()
 	//console.log(sw_position_content);
 	return "<strong>DPID:</strong> <span style='color:red'>" + d.dpid + "</span>";
   })
+$(".d3-tip").css({"position":"absolute", "z-index":"1"});
 
 var color = d3.scale.category20();
-// basic Topology instance
 var topo = new Topology();
-// current Topology instance
-var active_topo = new Topology();
 
 var elem = {
     force: d3.layout.force()
+		.gravity(0.05)
         .size([width, height])
         .charge(charge)
         .linkDistance(dist)
@@ -39,8 +40,10 @@ var elem = {
         .attr("height", height)
 		.call(tip),
     console: d3.select("body").append("div")
-        .attr("id", "console")
-        .attr("width", width)
+        .attr("id", "console"),
+        //.attr("width", width)
+	btn:  d3.select("body").append("div")	
+		
 };
 
 function tick() {
@@ -52,94 +55,119 @@ function tick() {
 
 	elem.node
 		.attr("transform", function(d) { 
+			//console.log(d+": ");
 			return "translate(" + d.x + "," + d.y + ")"; 
 		});
 		
 	elem.port
 		.attr("transform", function(d) {
 			var p = topo.get_port_point(d);
-			return "translate(" + p.x + "," + p.y + ")";
+			if ( p == null ) {
+				return;
+			} else {
+				return "translate(" + p.x + "," + p.y + ")";
+			}
 		});
 }
 
+function mouseover() {
+	d3.select(this).select("circle").transition()
+		.duration(750)
+		.attr("r", 26);
+
+	d3.select(this).select("text").transition()
+		.duration(750)
+		.attr("x", 13)
+			.style("stroke-width", ".5px")
+			.style("font", "17.5px serif")
+			.style("opacity", 1);
+}
+
+function mouseout() {
+	d3.select(this).select("circle").transition()
+		.duration(750)
+		.attr("r", 16);
+}
+
+// Define funtions of the 'elem' object 
+// Function 'drag'
 elem.drag = elem.force.drag().on("dragstart", dragstart);	
 function dragstart(d) {
 	d3.select(this).classed("fixed", d.fixed = true);
-	//d3.select(this).attr("transform", function(d) {return "translate(" + (d.x+100) + "," + (d.y+100) + ")"; });
 }
 
+// Function 'update'
 elem.update = function () {
+	if (this.node != null) this.node.remove();
+	if (this.link != null) this.link.remove();
+	if (this.port != null) this.port.remove();
 
-	elem.node.remove();
-	elem.link.remove();
-	elem.port.remove();
-
-	elem.node = elem.svg.selectAll(".node");
-	elem.link = elem.svg.selectAll(".link");
-	elem.port = elem.svg.selectAll(".port");
+	this.node = elem.svg.selectAll(".node");
+	this.link = elem.svg.selectAll(".link");
+	this.port = elem.svg.selectAll(".port");
 	
 	this.force
 		.nodes(topo.switches)
 		.links(topo.links)
-	.start();
+	//.start();
 
+	// Define links
 	this.link = this.link.data(topo.links);
-	this.link.exit().remove();
 	this.link.enter().append("line")
 		.attr("class", "link")
-		//.style("stroke-width", function(d) { return Math.sqrt(d.value); })
 		.style("stroke-width", function(d) { return '3px'; })
 		.style("stroke", function(d) { 
 			//return d.active;
-			if (d.active) { return "green" }
-			else { return "red" }
+			switch (d.active) { 
+				case "up": 
+					return "green";
+				case "down":
+					return "red";
+				case "backup":
+					return "grey";
+			}
 		});
-
-//	this.node = this.node.data(topo.switches);
-//	var nodeEnter = this.node.enter().append("g")
-//		.attr("class", "node")
-//		.style("fill", function(d) { return color(d.group); })
-//		.style("opacity", 0.9)
-//		.on("mouseover", mouseover)
-//		.on("mouseout", mouseout)
-//		.call(this.drag);
-//	nodeEnter.append("circle")
-//		.attr("r", 16);
-//	nodeEnter.append("svg:text")
-//		.attr("class", "nodetext")
-//		.attr("dx", 12)
-//		.attr("dy", ".35em")
-//		.text(function(d) { return d.dpid });
+	this.link.exit().remove();
 	
+	// Define nodes
     this.node = this.node.data(topo.switches);
-	this.node.exit().remove();
     var nodeEnter = this.node.enter().append("g")
         .attr("class", "node")
-        .on("dblclick", function(d) { d3.select(this).classed("fixed", d.fixed = false); })
+        .on("dblclick", function(d) { 
+			//d3.select(this).classed("fixed", d.fixed = false); 
+			//openPopup(d.dpid);
+			tasks[currTask](d.dpid);
+			//console.log(nodeconfig.nodegrid.records);
+		})
 		.on('mouseover', tip.show)
 		.on('mouseout', tip.hide)
 		.on("click", function(d) {
-			//var dpidValue = trim(d.dpid);
-			//d3.select(this).attr("transform", "translate(200, 0)");
-			console.log("Click: " + d.dpid + ", " + d.x);
-			tasks[currTask](d.dpid);
+			//console.log("Click: " + d.dpid + ", " + d.x);
 		})
         .call(this.drag);
 		
     nodeEnter.append("image")
         .attr("xlink:href", function(d) {
-			if (d.active) { return "./router.svg" }
-			else { return "./router_cr.gif" }
+			switch (d.active) {
+				case "up":
+					return "./router.svg";
+				case "down":
+					return "./router_cr.gif";
+			}
 		})
         .attr("x", -CONF.image.width/2)
         .attr("y", -CONF.image.height/2)
         .attr("width", CONF.image.width)
         .attr("height", CONF.image.height);
+		
     nodeEnter.append("text")
         .attr("dx", -CONF.image.width/2)
         .attr("dy", CONF.image.height-10)
         .text(function(d) { return d.dpid });
+		
+	this.node.exit().remove();
 	
+	// Define ports
 	var ports = topo.get_ports();
     this.port.remove();
     this.port = this.svg.selectAll(".port").data(ports);
@@ -152,7 +180,18 @@ elem.update = function () {
         .attr("dx", 3)
         .attr("dy", 12)
         .text(function(d) { return d.port });
+		
+	// Start
+	this.force.start();
 };
+
+// Class L2OVXRequest
+function L2OVXRequest (method, params) {
+	this.id = 1;
+	this.jsonrpc = "2.0";
+	this.method = method;
+	this.params = params;
+}
 
 // Class Topology
 function Topology () {
@@ -161,16 +200,20 @@ function Topology () {
 	this.switch_index = {};
 }
 
-Topology.prototype.initialize = function (data) {
-    this.add_switches(data.switches);
-    this.add_links(data.links);
+Topology.prototype.initialize = function (switches, links) {
+	this.switches = [];
+    this.links = [];
+	this.switch_index = {};
+	
+    this.add_switches(switches);
+    this.add_links(links);
 };
 
 Topology.prototype.add_switches = function (switches) {
     for (var i = 0; i < switches.length; i++) {
 		var sw = {
 			dpid: switches[i].dpid,
-			active: false
+			active: "down"
 		}
         this.switches.push(sw);
 		console.log("add switch: " + JSON.stringify(sw.dpid));
@@ -180,8 +223,6 @@ Topology.prototype.add_switches = function (switches) {
 
 Topology.prototype.add_links = function (links) {
     for (var i = 0; i < links.length; i++) {
-        //console.log("add link: " + JSON.stringify(links[i]));
-
         var src_dpid = links[i].src.dpid;
         var dst_dpid = links[i].dst.dpid;
         var src_index = this.switch_index[src_dpid];
@@ -196,7 +237,7 @@ Topology.prototype.add_links = function (links) {
             },
 			id: linkId,
 			value: 1,
-			active: false
+			active: "down"
         }
     this.links.push(link);
     }
@@ -228,6 +269,8 @@ Topology.prototype.get_port_point = function (d) {
     var weight = 0.88;
 
     var link = this.links[d.link_idx];
+	if ( typeof(link) == "undefined" ) return null;
+	
     var x1 = link.source.x;
     var y1 = link.source.y;
     var x2 = link.target.x;
@@ -248,56 +291,42 @@ Topology.prototype.refresh_switch_index = function(){
     }
 };
 
-Topology.prototype.update_active = function(active_switches, active_links) {
+Topology.prototype.update_active = function(active_switches, active_links, active_backuplinks) {
 	for (var i=0; i<this.switches.length; i++) {
 		// set the active of switch to be not alive
-		this.switches[i].active = false;
+		this.switches[i].active = "down";
 		for (var j=0; j<active_switches.length; j++) {
 			if (this.switches[i].dpid == active_switches[j].dpid) {
 				// means this switch is alive
-				this.switches[i].active = true;
+				this.switches[i].active = "up";
 				break;
 			}
 		}
 	}
 	
 	for (var i=0; i<this.links.length; i++) {
-		this.links[i].active = false;
+		this.links[i].active = "down";
 		for (var j=0; j<active_links.length; j++) {
 			if (this.links[i].port.src.dpid == active_links[j].src.dpid &&
 					this.links[i].port.dst.dpid == active_links[j].dst.dpid) {
-				this.links[i].active = true;
+				this.links[i].active = "up";
+				break;				
+			}
+		}
+		
+		for (var j=0; j<active_backuplinks.length; j++) {
+			if (this.links[i].port.src.dpid == active_backuplinks[j].src.dpid &&
+					this.links[i].port.dst.dpid == active_backuplinks[j].dst.dpid) {
+				this.links[i].active = "backup";
 				break;				
 			}
 		}
 	}
 }
 
-function include(arr, obj) {
-    for(var i=0; i<arr.length; i++) {
-        if (arr[i] == obj) return true;
-    }
-}
-
-
-function download(filename, text) {
-    var pom = document.createElement('a');
-    pom.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
-    pom.setAttribute('download', filename);
-
-    if (document.createEvent) {
-        var event = document.createEvent('MouseEvents');
-        event.initEvent('click', true, true);
-        pom.dispatchEvent(event);
-    }
-    else {
-        pom.click();
-    }
-}
-
 function update_active_topology(index) {
 	
-	if (index == 1) {
+	if (index == 0) {
 		d3.xhr("http://211.79.63.108:8080/status")
 			.post(
 				JSON.stringify({"jsonrpc": "2.0", "method": "getPhysicalTopology", "params": {}, "id": 1}),
@@ -307,24 +336,30 @@ function update_active_topology(index) {
 				//	console.log("got response", data);
 				//}
 				function(error, d) {
-					var rawdata = JSON.parse(d.response);
-					var graph = rawdata.result;
-					//for (var k in graph.switches) {
-					//	console.log(graph.switches[k].dpid);
-					//}
-					//topo.initialize({switches: graph.switches, links: graph.links});
+					var rawdata = "";
+					var graph = "";
+					try {
+						rawdata = JSON.parse(d.response);
+						graph =rawdata.result;
+						if ( typeof(graph.switches) == "undefined" || 
+							graph.links == "undefined" ) return;
+						topo.update_active(graph.switches, graph.links, {});
 					
-					topo.update_active(graph.switches, graph.links);
-					
-					elem.update();
+						elem.update();
+					} catch (error) {
+						console.log(error);
+					}
 				}
 			);
 	}
 	
-	if (index == 2) {
+	if (index >= 1) {
+		var req = new L2OVXRequest("getVirtualSwitchMapping", {"tenantId": index});
+		
 		d3.xhr("http://211.79.63.108:8080/status")
 			.post(
-				JSON.stringify({"jsonrpc": "2.0", "method": "getVirtualSwitchMapping", "params": {"tenantId": 1}, "id": 1}),
+				//JSON.stringify({"jsonrpc": "2.0", "method": "getVirtualSwitchMapping", "params": {"tenantId": 1}, "id": 1}),
+				JSON.stringify(req),
 				
 				function(error, d) {
 					var rawdata = "";
@@ -333,10 +368,42 @@ function update_active_topology(index) {
 					try {
 						rawdata = JSON.parse(d.response);
 						graph = rawdata.result;
-						topo.update_active(graph.switches, graph.primarylinks);
+						
+						var switches = {};
+						var links = {};
+						var backuplinks = {};
+									
+						if (typeof(graph) != "undefined") {
+							// refill the switches and link set
+							if (typeof(graph.switches) != "undefined")
+								switches = graph.switches;
+							if (typeof(graph.primarylinks) != "undefined") {
+								links = graph.primarylinks;
+								backuplinks = graph.backuplinks;
+							}
+						}
+						
+						var all_links = links.concat(backuplinks);
+						topo.links = [];
+						topo.add_links(all_links);
+						topo.update_active(switches, links, backuplinks);
 						elem.update();	
+						
+						/*
+						if ( typeof(graph.switches) == "undefined" || 
+							graph.primarylinks == "undefined" ) return;
+						
+						// concat "primary" and "backup" links
+						var all_links = graph.primarylinks.concat(graph.backuplinks);
+						// refill the all links including backuplink if the topology has.
+						topo.links = [];
+						topo.add_links(all_links);
+						
+						// only update the primaryLinks
+						topo.update_active(graph.switches, graph.primarylinks);
+						elem.update();*/	
 					} catch (error) {
-						//console.log(error);
+						console.log("Tenant (id: " + index + ") does not exist or start up!");
 					}
 					
 				}
@@ -346,22 +413,26 @@ function update_active_topology(index) {
 }
 
 function initialize_topology(index) {
-	if (index == 1) {
+	if (index == 0) {
 		// Read from data with JSON format
 		d3.json("/i2.topo.json", function(error, basic_graph) {
 			if (error) return console.warn(error);
-			for (var k in basic_graph.switches) {
-				console.log(basic_graph.switches[k].dpid);
-			}
-			topo.initialize({switches: basic_graph.switches, links: basic_graph.links});
-			//elem.update();
+			
+			if ( typeof(basic_graph.switches) == "undefined" || 
+							basic_graph.links == "undefined" ) return;
+			
+			topo.initialize(basic_graph.switches, basic_graph.links);
+			elem.update();
 		});
 	}
 
-	if (index == 2) {
+	if (index >= 1) {
+		var req = new L2OVXRequest("getVirtualSwitchMapping", {"tenantId": index});
+		
 		d3.xhr("http://211.79.63.108:8080/status")
 			.post(
-				JSON.stringify({"jsonrpc": "2.0", "method": "getVirtualSwitchMapping", "params": {"tenantId": 1}, "id": 1}),
+				//JSON.stringify({"jsonrpc": "2.0", "method": "getVirtualSwitchMapping", "params": {"tenantId": 1}, "id": 1}),
+				JSON.stringify(req),
 				
 				function(error, d) {
 					var rawdata = "";
@@ -370,12 +441,23 @@ function initialize_topology(index) {
 					try {
 						rawdata = JSON.parse(d.response);
 						graph = rawdata.result;
-						// concat "primary" and "backup" links
-						var all_links = graph.primarylinks.concat(graph.backuplinks);
-						//console.log("links: " + JSON.stringify(all_links));
-						topo.initialize({switches: graph.switches, links: all_links});
+						var switches = {};
+						var links = {};
+									
+						if (typeof(graph) != "undefined") {
+							// refill the switches and link set
+							if (typeof(graph.switches) != "undefined")
+								switches = graph.switches;
+							if (typeof(graph.primarylinks) != "undefined") {
+								// concat "primary" and "backup" links
+								links = graph.primarylinks.concat(graph.backuplinks);
+							}
+						}
+						
+						topo.initialize(switches, links);
+						elem.update();
 					} catch (error) {
-						//console.log(error);
+						console.log("Tenant (id: " + index + ") does not exist or start up!");
 					}
 					
 				}
@@ -383,34 +465,75 @@ function initialize_topology(index) {
 	}
 }
 
-function mouseover() {
-	d3.select(this).select("circle").transition()
-		.duration(750)
-		.attr("r", 26);
-
-	d3.select(this).select("text").transition()
-		.duration(750)
-		.attr("x", 13)
-			.style("stroke-width", ".5px")
-			.style("font", "17.5px serif")
-			.style("opacity", 1);
-}
-
-function mouseout() {
-	d3.select(this).select("circle").transition()
-		.duration(750)
-		.attr("r", 16);
-}
-
 function main() {
-	elem.node = elem.svg.selectAll(".node");
+	/*elem.node = elem.svg.selectAll(".node");
 	elem.link = elem.svg.selectAll(".link");
 	elem.port = elem.svg.selectAll(".port");
 	
-	index = 2;
+	index = 0;
 	
 	initialize_topology(index);
-	setInterval(function() { update_active_topology(index) }, 1000);
+	setInterval(function() { update_active_topology(index) }, 5000);*/
+	
+	
+	elem.svg.append("input")
+		.attr("type", "button")
+		.attr("value", "Add")
+		.attr("onclick", "showPositon()");
+}
+
+function showPositon() {
+	alert(elem.node.length);
 }
 
 main();
+
+// widget configuration
+var nodeconfig = {
+    nodelayout: {
+        name: 'node-layout',
+        padding: 0,
+        panels: [
+            { type: 'main', minSize: 350, resizable: true }
+        ]
+    },
+
+    nodegrid: { 
+        name: 'node-grid',
+        style: 'border: 0px; border-left: 1px solid silver',
+        columns: [
+            //{ field: 'dpid', caption: 'DPID', size: '80px', attr: 'align="center"' },
+            { field: 'match', caption: 'Match', size: '50%' },
+			{ field: 'actions', caption: 'Action', size: '50%' },
+			
+        ],
+        records: [
+            //{ recid: 1, dpid: 'Open', match: 'Short title for the record', actions: 2 },
+            //{ recid: 2, dpid: 'Open', match: 'Short title for the record', actions: 3 },
+            //{ recid: 3, dpid: 'Closed', match: 'Short title for the record', actions: 1 }
+        ]
+    }
+};
+
+function openPopup(dpid) {
+    w2popup.open({
+        title   : 'Flows (' + dpid + ')',
+        width   : 800,
+        height  : 600,
+        showMax : true,
+        body    : '<div id="popupmain" style="position: absolute; left: 0px; top: 0px; right: 0px; bottom: 0px;"></div>',
+        onOpen  : function (event) {
+            event.onComplete = function () {
+                $('#popupmain').w2render('node-layout');
+                w2ui['node-layout'].content('main', w2ui['node-grid']);
+            }
+        },       
+    });
+}
+
+$(function () {
+    // initialization in memory
+	$('#node-layout').w2layout(nodeconfig.nodelayout);
+    $().w2grid(nodeconfig.nodegrid);
+});
+

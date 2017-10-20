@@ -6,58 +6,229 @@
 	<script src="http://d3js.org/d3.v3.min.js"></script>
 	<script src="http://labratrevenge.com/d3-tip/javascripts/d3.tip.v0.6.3.js"></script>
 	<script src="http://ajax.googleapis.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
-    <script type="text/javascript" src="http://w2ui.com/src/w2ui-1.5.rc1.min.js"></script>
+    <script type="text/javascript" src="http://rawgit.com/vitmalina/w2ui/master/dist/w2ui.min.js"></script>
 	<script src="ajax.js"></script>
 	<script src="utils.js"></script>
 	
 	<link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.5/css/bootstrap.min.css" media="all">
-	<link rel="stylesheet" type="text/css" href="http://w2ui.com/src/w2ui-1.5.rc1.min.css" />
+	<link rel="stylesheet" type="text/css" href="http://rawgit.com/vitmalina/w2ui/master/dist/w2ui.min.css" />
 	<link rel="stylesheet" type="text/css" href="l2ovx.topo.css">
 	<link rel="stylesheet" type="text/css" href="table.css">
+	<!--<style type="text/css"> 
+		.w2ui-head {
+			text-align: center;
+		}
+	</style>-->
+
 </head>
 
-<body>
-<h3>L2OVX Topology Viewer</h3>
-	<script src="l2ovx.topo.js"></script>
-	<script src="l2ovx.flows.js"></script>
-	<script src="l2ovx.log.js"></script>
+<body style="margin: 0px;">
+<h3>L2OVX Viewer</h3>
+<script src="l2ovx.flows.js"></script>
+<script src="l2ovx.topo.js"></script>
+<script src="l2ovx.log.js"></script>
+<!--<script src="l2ovx.tenants.js"></script>
+<script src="graph.js"></script>-->
 	
-	<div id="myLayout" style="height: 800px"></div>
+<div id="main-layout" style="position: absolute; width: 100%; height: 92%; z-index: -2"></div>
+
+<script type="text/javascript">	
+//var pstyle = 'background-color: #F5F6F7; border: 1px solid #dfdfdf; padding: 5px;';
+var selectTenantId;
+var lastLogLength = 0;
+
+var config = {
+	layout: {
+		name: 'layout',
+		panels: [
+			{ type: 'left', size: '6%', resizable: true},
+			{ type: 'main'},
+			//{ type: 'preview', size: '40%', resizable: true },
+			{ type: 'bottom', size: '20%', resizable: true }
+		]
+	},
+    logGrid: { 
+        name: 'logGrid',
+		//url: 'log1.json',
+		//method: 'GET', // need this to avoid 412 error on Safari
+		show: {
+			toolbar: true,
+			footer: true
+		},
+        columns: [
+            { field: 'date', caption: 'Date', size: '15%', sortable: true, searchable: true },
+            { field: 'level', caption: 'Level', size: '5%', sortable: true, searchable: true },
+            { field: 'event', caption: 'Event', size: '80%', searchable: true }
+        ],
+        onClick: function(event) {
+		/*
+            var grid = this;
+            var form = w2ui.form;
+            event.onComplete = function () {
+                var sel = grid.getSelection();
+                if (sel.length == 1) {
+                    form.recid  = sel[0];
+                    form.record = $.extend(true, {}, grid.get(sel[0]));
+                    form.refresh();
+                } else {
+                    form.clear();
+                }
+            }*/
+        }
+    }, 
+	tenantGrid: { 
+        name: 'tenantGrid',
+		show: {
+			toolbar: true, 
+			toolbarColumns: false, 
+			toolbarInput: false, 
+			toolbarSearch: false
+		},
+        columns: [
+            { field: 'tid', caption: 'TenantId', size: '5%', style: 'text-align: center'},
+			//{ field: 'status', caption: 'Status', size: '5%', style: 'text-align: center'},
+        ],
+        onClick: function(event) {
+			event.onComplete = function () {
+				var sel = this.getSelection();
+				if (sel.length == 1) {
+					selectTenantId = sel[0];
+					initialize_topology(selectTenantId);
+					update_active_topology(selectTenantId);
+				}
+			}
+
+        }, 
+		onReload: function(event) {
+			selectTenantId = 0;
+			initialize_topology(selectTenantId);
+			update_active_topology(selectTenantId);
+		}
+    }
+};
+
+/*config.tenantGrid.records = [
+			{ "recid": "1", "tid": "1" }, 
+			{ "recid": "2", "tid": "2", "w2ui": { "style": "background-color: #C2F5B4" } }, 
+		];*/
+
+$(function () {
+	// topology initialization
+	selectTenantId = 0;
+	initialize_topology(selectTenantId);
+	update_active_topology(selectTenantId);
 	
-	<script>
+    // Layout initialization 
+	$('#main-layout').w2layout(config.layout);
+	w2ui.layout.content('left', $().w2grid(config.tenantGrid));
+	if ( typeof(topology) != "undefined" )
+		w2ui.layout.content('main', topology);
+	//w2ui.layout.content('preview', tableDiv1);
+	w2ui.layout.content('bottom', $().w2grid(config.logGrid));
+});
+
+/*	
 	$(function () {
 
 		var pstyle = 'background-color: #F5F6F7; border: 1px solid #dfdfdf; padding: 5px;';
-		$('#myLayout').w2layout({
-			name: 'myLayout',
+		$('#layout').w2layout({
+			name: 'layout',
 			panels: [
 				//{ type: 'top',  size: 50, resizable: true, style: pstyle, content: top_title },
-				{ type: 'left', size: 200, resizable: true, style: pstyle, content: 'left' },
+				{ type: 'left', size: '10%', resizable: true, style: pstyle, content: tenantList },
 				{ type: 'main', 
 					style: pstyle, 
 					content: topology,
-					//tabs: {
-					//	active: 'tab1',
-					//	tabs: [
-					//		{ id: 'tab1', caption: 'Tab 1' },
-					//		{ id: 'tab2', caption: 'Tab 2' },
-					//		{ id: 'tab3', caption: 'Tab 3' },
-					//		{ id: 'tab4', caption: 'Tab 4' }
-					//	],
-					//	onClick: function (id, data) {
-					//		console.log(id);
-					//	}
-					//}
 				},
 				// tableDiv1 from flows.js
-				{ type: 'preview', size: '30%', resizable: true, style: pstyle, content: tableDiv1 },
+				{ type: 'preview', size: '40%', resizable: true, style: pstyle, content: tableDiv1 },
 				//{ type: 'right', size: 200, resizable: true, style: pstyle, content: 'right' },
-				{ type: 'bottom', size: 50, resizable: true, style: pstyle, 
-					content: '<textarea id="logContent" width="100%" height="100%">123</textarea>' }
+				{ type: 'bottom', size: '20%', resizable: true, style: pstyle, 
+					content: '<textarea id="logContent">123</textarea>' }
 			]
 		}); 
 	});
+*/
 
-	</script>
+
+setInterval(function() { 
+	$.get('web-display.log', function(data) {
+		var lines = data.split('\n');
+		var logArray = [];
+		for (var i=lines.length-1; i>=0; i--) {
+			if ($.trim(lines[i]) === "") {
+				continue;
+			}
+			var l = "";
+			var w2uiStyle = {};
+			try {
+				l = JSON.parse(lines[i]);
+				switch (l.level.toUpperCase()) {
+					case "ERROR":
+						w2uiStyle = { "style": "background-color: #FF0000" };
+						break;
+					case "WARN": 
+						w2uiStyle = { "style": "background-color: #FFFF00" };
+						break;
+				}
+				l.w2ui = w2uiStyle;
+				logArray.push(l);
+			} catch (error) {
+				console.log("Error JSON format: " + lines[i]);
+			}
+		}
+		if (lastLogLength != logArray.length) {
+			w2ui['logGrid'].records = logArray;
+			w2ui['logGrid'].reload(); 
+			lastLogLength = logArray.length;
+		}
+	});
+		
+	var req = new L2OVXRequest("listVirtualNetworks", {});
+		
+	d3.xhr("http://211.79.63.108:8080/status")
+		.post(JSON.stringify(req), function(error, d) {
+			var tenantArray = []; 
+			var rawdata = "";
+			try {
+				rawdata = JSON.parse(d.response);
+				var tenantList = rawdata.result
+				for (var i in tenantList) {
+					var w2uiStyle = {};
+					switch (tenantList[i].status.toUpperCase()) {
+						case "WARN": 
+							w2uiStyle = { "style": "background-color: #FFFF00" };
+							break;
+						case "ERROR":
+							w2uiStyle = { "style": "background-color: #FF0000" };
+							break;
+						case "UP":
+							w2uiStyle = { "style": "background-color: #00FF00" };
+							break;
+					}		
+					tenantArray.push({
+						recid: tenantList[i].tenantId,
+						tid: tenantList[i].tenantId + " ("+ tenantList[i].status +")",
+						//status: tenantList[i].status, 
+						w2ui: w2uiStyle
+					});
+				}
+				w2ui['tenantGrid'].records = tenantArray;
+				w2ui['tenantGrid'].reload();
+				//console.log(tenantArray);
+				
+			} catch (error) {
+				console.log(error);
+			}
+								
+		}
+	);
+	
+}, 10000);
+
+setInterval(function() { 
+	update_active_topology(selectTenantId);
+}, 20000);
+</script>
 </body>
 </html>
