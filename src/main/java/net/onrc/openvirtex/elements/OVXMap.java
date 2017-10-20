@@ -946,4 +946,7 @@ public final class OVXMap implements Mappable {
 		return portMap;
 	}
 
+	public int getSwitchRouteSize() {
+		return this.routetoPhyLinkMap.size();
+	}
 }

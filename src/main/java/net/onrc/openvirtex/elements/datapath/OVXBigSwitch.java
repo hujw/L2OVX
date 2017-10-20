@@ -25,10 +25,12 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.onrc.openvirtex.api.service.handlers.TenantHandler;
+import net.onrc.openvirtex.elements.OVXMap;
 import net.onrc.openvirtex.elements.link.PhysicalLink;
 import net.onrc.openvirtex.elements.network.PhysicalNetwork;
 import net.onrc.openvirtex.elements.port.OVXPort;
 import net.onrc.openvirtex.exceptions.IndexOutOfBoundException;
+import net.onrc.openvirtex.exceptions.LinkMappingException;
 import net.onrc.openvirtex.exceptions.RoutingAlgorithmException;
 import net.onrc.openvirtex.routing.RoutingAlgorithms;
 import net.onrc.openvirtex.routing.RoutingAlgorithms.RoutingType;
@@ -316,7 +318,7 @@ public class OVXBigSwitch extends OVXSwitch {
      *             if insufficient space to store new route
      */
     public SwitchRoute createRoute(final OVXPort ingress, final OVXPort egress,
-            final List<PhysicalLink> path, final List<PhysicalLink> revpath,
+    		final List<PhysicalLink> path, final List<PhysicalLink> revpath,
             byte priority, int routeId) throws IndexOutOfBoundException {
         /*
          * Check if the big-switch route exists. - If not, create both routes
@@ -331,12 +333,15 @@ public class OVXBigSwitch extends OVXSwitch {
         if (rtEntry == null && revRtEntry == null) { 
             rtEntry = new SwitchRoute(this, ingress, egress, routeId, priority);
             revRtEntry = new SwitchRoute(this, egress, ingress, routeId, priority);
+            
+            rtEntry.addPrimaryRoute(priority, path);
+            revRtEntry.addPrimaryRoute(priority, revpath);
+            
             this.map.addRoute(rtEntry, path);
             this.map.addRoute(revRtEntry, revpath);
-
             this.addToRouteMap(ingress, egress, rtEntry);
             this.addToRouteMap(egress, ingress, revRtEntry);
-
+            
             log.info(
                     "Add route for big-switch {} between ports ({},{}) with priority: {} and path: {}",
                     this.switchName, ingress.getPortNumber(),
@@ -350,6 +355,17 @@ public class OVXBigSwitch extends OVXSwitch {
         } else {
             this.routeCounter.releaseIndex(routeId);
             byte currentPriority = rtEntry.getPriority();
+            // rewrite again to avoid the content be changed.
+            // Do not know the reason
+            try {
+				rtEntry.addPrimaryRoute(currentPriority, 
+						OVXMap.getInstance().getRoute(rtEntry));
+				revRtEntry.addPrimaryRoute(currentPriority, 
+						OVXMap.getInstance().getRoute(revRtEntry));
+			} catch (LinkMappingException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
             if (U8.f(currentPriority) >= U8.f(priority)) {
                 rtEntry.addBackupRoute(priority, path);
                 revRtEntry.addBackupRoute(priority, revpath);
@@ -380,7 +396,7 @@ public class OVXBigSwitch extends OVXSwitch {
         return rtEntry;
     }
 
-    public SwitchRoute createRoute(final OVXPort ingress, final OVXPort egress,
+    public SwitchRoute createRoute(OVXPort ingress, OVXPort egress,
             final List<PhysicalLink> path, final List<PhysicalLink> revpath,
             byte priority) throws IndexOutOfBoundException {
         final int routeId = this.routeCounter.getNewIndex();
@@ -395,9 +411,9 @@ public class OVXBigSwitch extends OVXSwitch {
 
         if (rtmap == null) {
             rtmap = new ConcurrentHashMap<OVXPort, SwitchRoute>();
-            this.routeMap.put(in, rtmap);
         }
         rtmap.put(out, entry);
+        this.routeMap.put(in, rtmap);
     }
 
     @Override
